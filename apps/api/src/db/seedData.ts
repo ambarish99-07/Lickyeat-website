@@ -1,9 +1,30 @@
+import bcrypt from "bcryptjs";
 import { BrandModel } from "./models/Brand.model.js";
 import { MenuAddOnModel } from "./models/MenuAddOn.model.js";
 import { MenuItemModel } from "./models/MenuItem.model.js";
 import { ComboModel } from "./models/Combo.model.js";
 import { CouponModel } from "./models/Coupon.model.js";
 import { StoreSettingsModel } from "./models/StoreSettings.model.js";
+import { UserModel } from "./models/User.model.js";
+
+/** Demo admin login for local dev: admin@lickyeat.com / Lickyeat@123 */
+export async function ensureDemoAdmin() {
+  const existing = await UserModel.findOne({ email: "admin@lickyeat.com" });
+  if (existing) {
+    if (existing.role !== "admin") {
+      existing.role = "admin";
+      await existing.save();
+    }
+    return;
+  }
+  await UserModel.create({
+    name: "Lickyeat Admin",
+    email: "admin@lickyeat.com",
+    phone: null,
+    passwordHash: await bcrypt.hash("Lickyeat@123", 10),
+    role: "admin",
+  });
+}
 
 /**
  * Populate a fresh database with demo data. Reused by both the standalone
@@ -30,6 +51,8 @@ export async function runSeed(opts: { wipe?: boolean } = {}) {
     { $setOnInsert: { manualOpen: true } },
     { upsert: true },
   );
+
+  await ensureDemoAdmin();
 
   // ---------------------------------------------------------------- brands ----
   await BrandModel.create([

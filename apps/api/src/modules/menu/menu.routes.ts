@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { z } from "zod";
 import {
   CreateComboRequestSchema,
   CreateMenuItemRequestSchema,
@@ -16,6 +17,32 @@ menuRouter.get(
   "/addons",
   asyncHandler(async (_req, res) => {
     res.json({ addOns: await service.listAddOns() });
+  }),
+);
+
+menuRouter.post(
+  "/addons",
+  requireAuth,
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const body = parse(
+      z.object({ name: z.string().min(1).max(60), price: z.number().int().nonnegative(), isAvailable: z.boolean().optional() }),
+      req.body,
+    );
+    res.status(201).json({ addOn: await service.createAddOn(body) });
+  }),
+);
+
+menuRouter.patch(
+  "/addons/:id",
+  requireAuth,
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const body = parse(
+      z.object({ name: z.string().min(1).max(60).optional(), price: z.number().int().nonnegative().optional(), isAvailable: z.boolean().optional() }),
+      req.body,
+    );
+    res.json({ addOn: await service.updateAddOn(param(req, "id"), body) });
   }),
 );
 

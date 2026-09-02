@@ -10,11 +10,15 @@ export const ServiceHoursSchema = z.object({
 });
 export type ServiceHours = z.infer<typeof ServiceHoursSchema>;
 
-export const PlannedClosureSchema = z.object({
-  id: ObjectIdSchema,
+export const PlannedClosureInputSchema = z.object({
   startDate: z.string(),
   endDate: z.string(),
   reason: z.string().default(""),
+});
+export type PlannedClosureInput = z.infer<typeof PlannedClosureInputSchema>;
+
+export const PlannedClosureSchema = PlannedClosureInputSchema.extend({
+  id: ObjectIdSchema.optional(),
 });
 export type PlannedClosure = z.infer<typeof PlannedClosureSchema>;
 
@@ -24,6 +28,16 @@ export const StoreSettingsCoreSchema = z.object({
   serviceHours: z.array(ServiceHoursSchema).default([]),
   plannedClosures: z.array(PlannedClosureSchema).default([]),
 });
+
+/** Accepts closures without a client-supplied id (Mongoose assigns one). */
+export const UpdateStoreSettingsRequestSchema = z
+  .object({
+    manualOpen: z.boolean(),
+    serviceHours: z.array(ServiceHoursSchema),
+    plannedClosures: z.array(PlannedClosureInputSchema),
+  })
+  .partial();
+export type UpdateStoreSettingsRequest = z.infer<typeof UpdateStoreSettingsRequestSchema>;
 
 export const StoreSettingsSchema = StoreSettingsCoreSchema.extend({
   id: ObjectIdSchema,
@@ -46,6 +60,3 @@ export const StoreStatusSchema = z.object({
   upcomingClosure: PlannedClosureSchema.nullable(),
 });
 export type StoreStatus = z.infer<typeof StoreStatusSchema>;
-
-export const UpdateStoreSettingsRequestSchema = StoreSettingsCoreSchema.partial();
-export type UpdateStoreSettingsRequest = z.infer<typeof UpdateStoreSettingsRequestSchema>;

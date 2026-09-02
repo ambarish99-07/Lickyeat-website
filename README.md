@@ -25,13 +25,15 @@ Open http://localhost:3100.
 
 ### Seeding & admin
 
-Point `apps/api/.env` at a real `MONGODB_URI` (so the seed and the dev server share a DB), then:
+The API auto-seeds an empty database on boot when `SEED_ON_BOOT=1` (it's in `.env.example`), so the
+simplest setup needs nothing extra. Seeding creates a demo admin:
 
-```bash
-pnpm seed                                        # brands, menu, combos, coupons
-# sign up through the web app, then:
-pnpm --filter @lickyeat/api promote-admin you@example.com
 ```
+admin@lickyeat.com  /  Lickyeat@123
+```
+
+For a persistent DB, point `apps/api/.env` at a `MONGODB_URI` and run `pnpm seed` (wipes + reseeds).
+To promote your own signup to admin: `pnpm --filter @lickyeat/api promote-admin you@example.com`.
 
 ## Workspace
 

@@ -92,6 +92,20 @@ export async function listCombos(brandId: string) {
   return out;
 }
 
+export async function createAddOn(input: { name: string; price: number; isAvailable?: boolean }) {
+  const addOn = await MenuAddOnModel.create(input);
+  return serialize(addOn.toObject());
+}
+
+export async function updateAddOn(
+  id: string,
+  input: Partial<{ name: string; price: number; isAvailable: boolean }>,
+) {
+  const addOn = await MenuAddOnModel.findByIdAndUpdate(id, input, { new: true }).lean();
+  if (!addOn) throw notFound("Add-on not found");
+  return serialize(addOn);
+}
+
 export async function createMenuItem(input: CreateMenuItemRequest) {
   const item = await MenuItemModel.create(input);
   return serialize(item.toObject());
