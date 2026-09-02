@@ -4,6 +4,8 @@ import useSWR from "swr";
 import type { Order, OrderStatus } from "@lickyeat/shared-types";
 import { api } from "@/lib/api";
 import { rupees, formatDateTime } from "@/lib/format";
+import { Badge, EmptyState, cn } from "@/components/ui/misc";
+import { toast } from "@/state/toastStore";
 
 const NEXT: Record<string, OrderStatus | null> = {
   received: "preparing",
@@ -17,46 +19,57 @@ export default function AdminOrders() {
   const { data, mutate } = useSWR<{ orders: Order[] }>("/orders/admin/all");
 
   async function advance(id: string, status: OrderStatus) {
-    await api.post(`/orders/admin/${id}/status`, { status });
-    mutate();
+    try {
+      await api.post(`/orders/admin/${id}/status`, { status });
+      mutate();
+      if (status === "out-for-delivery") toast("Delivery partner assigned", { tone: "success" });
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Failed", { tone: "error" });
+    }
   }
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Orders</h1>
-      <p className="text-sm text-black/50">
-        Advancing an order to <em>out-for-delivery</em> assigns a delivery partner — the only way to
-        reach the tracking-screen delivery state.
+      <h1 className="font-display text-2xl font-extrabold">Orders</h1>
+      <p className="text-sm text-muted">
+        Moving an order to <em>out-for-delivery</em> assigns a delivery partner — the only way to
+        reach the tracking screen&rsquo;s delivery state.
       </p>
+
+      {data?.orders.length === 0 && <EmptyState title="No orders yet" />}
+
       <div className="space-y-2">
         {data?.orders.map((o) => {
           const next = NEXT[o.status];
           return (
             <div key={o.id} className="card flex flex-wrap items-center gap-3 p-4">
-              <div className="min-w-[120px]">
+              <div className="min-w-[110px]">
                 <p className="font-semibold">{o.code}</p>
-                <p className="text-xs text-black/45">{formatDateTime(o.createdAt)}</p>
+                <p className="text-xs text-muted">{formatDateTime(o.createdAt)}</p>
               </div>
-              <div className="text-sm text-black/60">
-                {o.brandId} · {rupees(o.pricing.total)} · {o.payment.method}/{o.payment.status}
+              <div className="text-sm text-charcoal">
+                {o.brandId} · {rupees(o.pricing.total)} ·{" "}
+                <span className="text-muted">
+                  {o.payment.method}/{o.payment.status}
+                </span>
               </div>
-              <span className="rounded-full bg-black/5 px-2 py-0.5 text-xs font-semibold capitalize">
+              <Badge tone={o.status === "cancelled" ? "bad" : o.status === "delivered" ? "good" : "brand"}>
                 {o.status.replace(/-/g, " ")}
-              </span>
+              </Badge>
               {o.deliveryPartner && (
-                <span className="text-xs text-black/45">🛵 {o.deliveryPartner.name}</span>
+                <span className="text-xs text-muted">🛵 {o.deliveryPartner.name}</span>
               )}
-              <div className="ml-auto">
-                {next && (
-                  <button className="btn-primary !py-1.5" onClick={() => advance(o.id, next)}>
-                    → {next.replace(/-/g, " ")}
-                  </button>
-                )}
-              </div>
+              {next && (
+                <button
+                  className={cn("btn-primary btn-sm ml-auto")}
+                  onClick={() => advance(o.id, next)}
+                >
+                  → {next.replace(/-/g, " ")}
+                </button>
+              )}
             </div>
           );
         })}
-        {data?.orders.length === 0 && <p className="text-sm text-black/50">No orders yet.</p>}
       </div>
     </div>
   );

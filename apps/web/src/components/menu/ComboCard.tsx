@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { computeComboPrice } from "@lickyeat/pricing";
 import type { ComboWithLive } from "@/lib/apiTypes";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
@@ -15,7 +16,15 @@ export function ComboCard({ combo }: { combo: ComboWithLive }) {
   const [picked, setPicked] = useState<string[]>([]);
   const sold = !combo.orderable;
 
-  function addToCart(comboItemIds: string[]) {
+  const pickedEstimate = useMemo(() => {
+    if (picked.length === 0) return combo.livePrice;
+    const prices = picked
+      .map((id) => combo.constituents.find((c) => c.id === id)?.price ?? 0)
+      .filter(Boolean);
+    return computeComboPrice(prices);
+  }, [picked, combo]);
+
+  function addToCart(comboItemIds: string[], estimate: number) {
     add({
       brandId: combo.brandId,
       kind: "combo",
@@ -23,7 +32,7 @@ export function ComboCard({ combo }: { combo: ComboWithLive }) {
       name: combo.name,
       imageUrl: combo.imageUrl,
       category: "combo",
-      unitBasePrice: combo.livePrice,
+      unitBasePrice: estimate,
       salePercent: 0,
       unitAddOnsPrice: 0,
       customization: { addOns: [], comboItemIds },
@@ -44,7 +53,10 @@ export function ComboCard({ combo }: { combo: ComboWithLive }) {
           {sold ? (
             <span className="text-xs font-bold uppercase text-muted">Unavailable</span>
           ) : combo.type === "curated" ? (
-            <button className="btn-primary btn-sm" onClick={() => addToCart([])}>
+            <button
+              className="btn-primary btn-sm"
+              onClick={() => addToCart([], combo.livePrice)}
+            >
               Add
             </button>
           ) : (
@@ -65,12 +77,12 @@ export function ComboCard({ combo }: { combo: ComboWithLive }) {
               disabled={picked.length !== combo.chooseCount}
               className="w-full"
               onClick={() => {
-                addToCart(picked);
+                addToCart(picked, pickedEstimate);
                 setOpen(false);
                 setPicked([]);
               }}
             >
-              Add combo · {rupees(combo.livePrice)}
+              Add combo · ~{rupees(pickedEstimate)}
             </Button>
           }
         >

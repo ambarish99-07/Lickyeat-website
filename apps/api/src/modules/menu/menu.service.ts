@@ -67,21 +67,25 @@ export async function listCombos(brandId: string) {
   const combos = await ComboModel.find({ brandId }).sort({ isAvailable: -1, name: 1 }).lean();
   const out = [];
   for (const combo of combos) {
-    const ids =
-      combo.type === "curated" ? combo.itemIds : combo.eligibleItemIds;
+    const ids = combo.type === "curated" ? combo.itemIds : combo.eligibleItemIds;
     const items = await MenuItemModel.find({ _id: { $in: ids } }).lean();
-    const basePrices = items.map((i) => i.price);
+    const availableCount = items.filter((i) => i.isAvailable ?? true).length;
+    const need = combo.type === "curated" ? items.length : (combo.chooseCount ?? items.length);
+
+    // Curated combos price the exact set; choose-your-own prices the N cheapest
+    // AVAILABLE items (the customer can't pick a sold-out one anyway).
+    const availablePrices = items
+      .filter((i) => i.isAvailable ?? true)
+      .map((i) => i.price);
     const livePrice =
       combo.type === "curated"
-        ? computeComboPrice(basePrices)
-        : computeComboPrice(
-            [...basePrices].sort((a, b) => a - b).slice(0, combo.chooseCount ?? basePrices.length),
-          );
-    const allConstituentsAvailable = items.every((i) => i.isAvailable ?? true);
+        ? computeComboPrice(items.map((i) => i.price))
+        : computeComboPrice([...availablePrices].sort((a, b) => a - b).slice(0, need));
+
     out.push({
       ...serialize<Record<string, unknown>>(combo),
       livePrice,
-      orderable: (combo.isAvailable ?? true) && allConstituentsAvailable,
+      orderable: (combo.isAvailable ?? true) && availableCount >= need,
       constituents: items.map((i) => serialize(i)),
     });
   }
