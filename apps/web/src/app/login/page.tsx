@@ -1,14 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { AuthResponse } from "@lickyeat/shared-types";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/state/authStore";
+import { Field, Input } from "@/components/ui/Field";
+import { Button } from "@/components/ui/Button";
 
-export default function LoginPage() {
+function LoginInner() {
   const router = useRouter();
+  const next = useSearchParams().get("next") || "/";
   const setSession = useAuth((s) => s.setSession);
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -22,7 +25,7 @@ export default function LoginPage() {
     try {
       const res = await api.post<AuthResponse>("/auth/login", { identifier, password });
       setSession(res);
-      router.push("/");
+      router.push(next);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Login failed.");
     } finally {
@@ -31,33 +34,37 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="mx-auto max-w-sm">
-      <h1 className="text-2xl font-bold">Log in</h1>
-      <form onSubmit={submit} className="card mt-4 space-y-3 p-5">
-        <div>
-          <span className="label">Email or phone</span>
-          <input className="input" value={identifier} onChange={(e) => setIdentifier(e.target.value)} />
-        </div>
-        <div>
-          <span className="label">Password</span>
-          <input
-            className="input"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <button className="btn-primary w-full" disabled={busy}>
-          {busy ? "…" : "Log in"}
-        </button>
-      </form>
-      <p className="mt-3 text-center text-sm text-black/55">
-        New here?{" "}
-        <Link href="/signup" className="font-semibold text-brand">
-          Create an account
-        </Link>
-      </p>
+    <div className="container-page flex justify-center py-16">
+      <div className="w-full max-w-sm">
+        <h1 className="font-display text-2xl font-extrabold">Welcome back</h1>
+        <p className="mt-1 text-sm text-muted">One account across every Lickyeat kitchen.</p>
+        <form onSubmit={submit} className="card mt-5 space-y-3 p-5">
+          <Field label="Email or phone">
+            <Input value={identifier} onChange={(e) => setIdentifier(e.target.value)} autoFocus />
+          </Field>
+          <Field label="Password">
+            <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+          </Field>
+          {error && <p className="text-sm text-rose-600">{error}</p>}
+          <Button className="w-full" disabled={busy}>
+            {busy ? "…" : "Log in"}
+          </Button>
+        </form>
+        <p className="mt-3 text-center text-sm text-muted">
+          New here?{" "}
+          <Link href="/signup" className="link">
+            Create an account
+          </Link>
+        </p>
+      </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginInner />
+    </Suspense>
   );
 }

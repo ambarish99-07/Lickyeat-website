@@ -1,69 +1,71 @@
-"use client";
+import type { Metadata } from "next";
+import { notFound, redirect } from "next/navigation";
+import { serverGet, serverGetOrNull } from "@/lib/serverApi";
+import type {
+  AddOnsResponse,
+  BrandResponse,
+  BrandStatusResponse,
+  CategoriesResponse,
+  CombosResponse,
+  MenuItemsResponse,
+} from "@/lib/apiTypes";
+import { BrandTheme } from "@/components/BrandTheme";
+import { BrandHero } from "@/components/BrandHero";
+import { BrandMenu } from "@/components/menu/BrandMenu";
 
-import { use } from "react";
-import useSWR from "swr";
-import type { Brand, Combo, MenuAddOnPrice, MenuItem } from "@lickyeat/shared-types";
-import { MenuItemCard } from "@/components/MenuItemCard";
-import { ComboCard } from "@/components/ComboCard";
-import { StoreClosedBanner } from "@/components/StoreClosedBanner";
+export const revalidate = 60;
 
-export default function BrandMenuPage({ params }: { params: Promise<{ brandId: string }> }) {
-  const { brandId } = use(params);
-  const { data: brandData } = useSWR<{ brand: Brand }>(`/brands/${brandId}`);
-  const { data: itemsData } = useSWR<{ items: MenuItem[] }>(`/menu/${brandId}/items`);
-  const { data: combosData } = useSWR<{
-    combos: Array<Combo & { livePrice: number; constituents: MenuItem[] }>;
-  }>(`/menu/${brandId}/combos`);
-  const { data: addOnData } = useSWR<{ addOns: MenuAddOnPrice[] }>("/menu/addons");
+async function loadBrand(brandId: string) {
+  return serverGetOrNull<BrandResponse>(`/brands/${brandId}`, { revalidate: 300 });
+}
 
-  const brand = brandData?.brand;
-  const items = itemsData?.items ?? [];
-  const addOnCatalog = addOnData?.addOns ?? [];
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ brandId: string }>;
+}): Promise<Metadata> {
+  const { brandId } = await params;
+  const data = await loadBrand(brandId);
+  if (!data) return { title: "Menu" };
+  return {
+    title: data.brand.name,
+    description: data.brand.description || data.brand.tagline,
+    openGraph: { title: `${data.brand.name} · Lickyeat`, description: data.brand.tagline },
+  };
+}
 
-  const categories = [...new Set(items.map((i) => i.category))];
+export default async function BrandPage({
+  params,
+}: {
+  params: Promise<{ brandId: string }>;
+}) {
+  const { brandId } = await params;
+  const brandData = await loadBrand(brandId);
+  if (!brandData) notFound();
+  const { brand } = brandData;
+
+  if (brand.status === "coming-soon") redirect(`/coming-soon/${brand.brandId}`);
+  if (brand.orderingModel === "tiffin") redirect("/tiffin");
+
+  const [status, items, categories, combos, addOns] = await Promise.all([
+    serverGet<BrandStatusResponse>(`/brands/${brandId}/status`, { revalidate: 30 }),
+    serverGet<MenuItemsResponse>(`/menu/${brandId}/items`, { revalidate: 60 }),
+    serverGet<CategoriesResponse>(`/menu/${brandId}/categories`, { revalidate: 60 }),
+    serverGet<CombosResponse>(`/menu/${brandId}/combos`, { revalidate: 60 }),
+    serverGet<AddOnsResponse>(`/menu/addons`, { revalidate: 60 }),
+  ]);
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-extrabold" style={{ color: brand?.primaryColor }}>
-          {brand?.name ?? "Menu"}
-        </h1>
-        <p className="text-black/55">{brand?.tagline}</p>
-      </div>
-
-      <StoreClosedBanner brandId={brandId} />
-
-      {combosData && combosData.combos.length > 0 && (
-        <section>
-          <h2 className="mb-3 text-lg font-bold">Combos</h2>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {combosData.combos.map((c) => (
-              <ComboCard key={c.id} combo={c} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {categories.map((cat) => (
-        <section key={cat}>
-          <h2 className="mb-3 text-lg font-bold">{cat}</h2>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {items
-              .filter((i) => i.category === cat)
-              .map((item) => (
-                <MenuItemCard key={item.id} item={item} addOnCatalog={addOnCatalog} />
-              ))}
-          </div>
-        </section>
-      ))}
-
-      {items.length === 0 && (
-        <div className="grid gap-4 sm:grid-cols-3">
-          {[0, 1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="h-40 animate-pulse rounded-2xl bg-black/5" />
-          ))}
-        </div>
-      )}
-    </div>
+    <BrandTheme brand={brand} as="div">
+      <BrandHero brand={brand} />
+      <BrandMenu
+        brand={brand}
+        items={items.items}
+        categories={categories.categories}
+        combos={combos.combos}
+        addOns={addOns.addOns}
+        status={status.status}
+      />
+    </BrandTheme>
   );
 }

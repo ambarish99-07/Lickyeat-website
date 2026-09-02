@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { CROSS_BRAND_ID } from "@lickyeat/shared-types";
+import { CROSS_BRAND_ID, type PricingCartLine } from "@lickyeat/shared-types";
 
 export interface CartCustomization {
   sugar?: "none" | "less" | "normal" | "extra";
@@ -15,17 +15,29 @@ export interface CartCustomization {
 export interface CartLine {
   /** stable client id */
   lineId: string;
-  /** fixed at add-time — checkout derives the order's brand from the lines,
-   *  never from whatever brand is ambiently selected in the UI. */
+  /**
+   * Fixed at add-time. Checkout derives the order's brand from the cart's own
+   * lines (`cartBrandId()`), never from whatever brand is ambiently selected.
+   */
   brandId: string;
   kind: "item" | "combo";
   refId: string;
   name: string;
   imageUrl: string | null;
-  /** display-only estimate; the server always resolves the real price. */
-  estUnitPrice: number;
+  category: string;
+  /** size-resolved unit price, BEFORE per-item sale and add-ons. */
+  unitBasePrice: number;
+  salePercent: number;
+  /** resolved per-unit add-on total. */
+  unitAddOnsPrice: number;
   quantity: number;
   customization: CartCustomization;
+}
+
+/** Per-unit price a line displays for (sale applied, add-ons added). */
+export function lineUnitPrice(l: CartLine): number {
+  const sale = l.salePercent > 0 ? Math.round(l.unitBasePrice * (1 - l.salePercent / 100)) : l.unitBasePrice;
+  return sale + l.unitAddOnsPrice;
 }
 
 interface CartState {
@@ -37,6 +49,8 @@ interface CartState {
   /** the single brand this cart belongs to (or null when empty). */
   cartBrandId: () => string | null;
   count: () => number;
+  /** map to the pure pricing engine's input shape for an instant local estimate. */
+  pricingLines: () => PricingCartLine[];
 }
 
 function makeLineId() {
@@ -50,7 +64,6 @@ export const useCart = create<CartState>()(
       add: (line) =>
         set((s) => {
           const quantity = line.quantity ?? 1;
-          // merge identical item+customization lines
           const key = JSON.stringify([line.refId, line.kind, line.customization]);
           const existing = s.lines.find(
             (l) => JSON.stringify([l.refId, l.kind, l.customization]) === key,
@@ -82,7 +95,19 @@ export const useCart = create<CartState>()(
         return [...brands][0] ?? null;
       },
       count: () => get().lines.reduce((n, l) => n + l.quantity, 0),
+      pricingLines: () =>
+        get().lines.map((l) => ({
+          lineId: l.lineId,
+          brandId: l.brandId,
+          name: l.name,
+          unitBasePrice: l.unitBasePrice,
+          quantity: l.quantity,
+          unitAddOnsPrice: l.unitAddOnsPrice,
+          salePercent: l.salePercent,
+          isCombo: l.kind === "combo",
+          category: l.category,
+        })),
     }),
-    { name: "lky_cart" },
+    { name: "lky_cart", version: 2 },
   ),
 );

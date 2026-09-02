@@ -3,26 +3,27 @@
 import { useState } from "react";
 import Link from "next/link";
 import useSWR from "swr";
-import type {
-  Address,
-  PremiumMembership,
-  PremiumMembershipStatus,
-} from "@lickyeat/shared-types";
-import { PREMIUM_MEMBERSHIP_PRICE, PREMIUM_MEMBERSHIP_DAYS } from "@lickyeat/shared-types";
+import type { Address } from "@lickyeat/shared-types";
+import { RequireAuth } from "@/components/RequireAuth";
 import { useAuth } from "@/state/authStore";
 import { api, ApiError } from "@/lib/api";
-import { formatDate } from "@/lib/format";
+import { Field, Input } from "@/components/ui/Field";
+import { Button } from "@/components/ui/Button";
+import { toast } from "@/state/toastStore";
 
 export default function AccountPage() {
-  const { user, ready } = useAuth();
-  const { data: addrData, mutate: mutateAddr } = useSWR<{ addresses: Address[] }>(
-    user ? "/account/addresses" : null,
+  return (
+    <RequireAuth>
+      <AccountInner />
+    </RequireAuth>
   );
-  const { data: premium, mutate: mutatePremium } = useSWR<{ status: PremiumMembershipStatus }>(
-    user ? "/premium-membership/status" : null,
-  );
+}
 
-  const [newAddr, setNewAddr] = useState<Address>({
+function AccountInner() {
+  const { user, setUser } = useAuth();
+  const { data: addrData, mutate } = useSWR<{ addresses: Address[] }>("/account/addresses");
+  const [name, setName] = useState(user?.name ?? "");
+  const [addr, setAddr] = useState<Address>({
     label: "Home",
     line1: "",
     line2: "",
@@ -30,124 +31,89 @@ export default function AccountPage() {
     pincode: "",
     withinDeliveryRadius: false,
   });
-  const [msg, setMsg] = useState("");
 
-  if (ready && !user) {
-    return (
-      <p className="py-16 text-center">
-        <Link href="/login" className="btn-primary">
-          Log in
-        </Link>
-      </p>
-    );
+  async function saveName() {
+    try {
+      const r = await api.patch<{ user: typeof user }>("/account/profile", { name });
+      if (r.user) setUser(r.user);
+      toast("Name updated", { tone: "success" });
+    } catch (e) {
+      toast(e instanceof ApiError ? e.message : "Failed", { tone: "error" });
+    }
   }
 
   async function addAddress() {
     try {
-      await api.post("/account/addresses", newAddr);
-      setNewAddr({ ...newAddr, line1: "", line2: "", pincode: "" });
-      mutateAddr();
+      await api.post("/account/addresses", addr);
+      setAddr({ ...addr, line1: "", line2: "", pincode: "" });
+      mutate();
+      toast("Address saved", { tone: "success" });
     } catch (e) {
-      setMsg(e instanceof ApiError ? e.message : "Failed");
+      toast(e instanceof ApiError ? e.message : "Failed", { tone: "error" });
     }
   }
 
-  async function buyPremium() {
-    setMsg("");
-    try {
-      const res = await api.post<{
-        membership: PremiumMembership;
-        razorpayOrder: { id: string };
-      }>("/premium-membership/purchase", {});
-      await api.post("/premium-membership/verify", {
-        membershipId: res.membership.id,
-        razorpayOrderId: res.razorpayOrder.id,
-        razorpayPaymentId: `pay_sim_${Date.now()}`,
-        razorpaySignature: "dev-ok",
-      });
-      mutatePremium();
-      setMsg("Premium membership active!");
-    } catch (e) {
-      setMsg(e instanceof ApiError ? e.message : "Purchase failed");
-    }
-  }
+  const completed = user?.completedOrderCount ?? 0;
+  const toPremiumTier = Math.max(0, 15 - completed);
 
   return (
-    <div className="max-w-2xl space-y-8">
+    <div className="container-page max-w-2xl space-y-8 py-10">
       <div>
-        <h1 className="text-2xl font-bold">{user?.name}</h1>
-        <p className="text-sm text-black/50">
-          {user?.email} {user?.phone ? `· ${user.phone}` : ""}
-        </p>
-        <p className="mt-1 text-sm text-black/50">
-          Completed orders: {user?.completedOrderCount ?? 0}
-          {(user?.completedOrderCount ?? 0) >= 15 && " · Premium tier unlocked 🎉"}
+        <h1 className="font-display text-3xl font-extrabold">{user?.name}</h1>
+        <p className="text-sm text-muted">
+          {user?.email}
+          {user?.phone ? ` · ${user.phone}` : ""}
         </p>
       </div>
 
       <section className="card p-5">
-        <h2 className="font-bold">Premium Membership</h2>
-        <p className="mt-1 text-sm text-black/55">
-          ₹{PREMIUM_MEMBERSHIP_PRICE} for {PREMIUM_MEMBERSHIP_DAYS} days — free delivery on every
-          order, no minimum.
+        <p className="eyebrow">Loyalty</p>
+        <p className="mt-1 text-sm text-charcoal">
+          {completed} completed order{completed === 1 ? "" : "s"}.{" "}
+          {toPremiumTier === 0 ? (
+            <span className="font-semibold text-brand">Premium tier unlocked — 25% off, always.</span>
+          ) : (
+            <>Just {toPremiumTier} more to reach the Premium tier (a permanent 25% off).</>
+          )}
         </p>
-        {premium?.status.active ? (
-          <p className="mt-3 text-sm font-semibold text-green-700">
-            Active · expires {premium.status.expiresAt ? formatDate(premium.status.expiresAt) : ""}
-            {premium.status.expiringSoon && " — expiring soon, renew to keep free delivery"}
-          </p>
-        ) : (
-          <button className="btn-primary mt-3" onClick={buyPremium}>
-            Get Premium (simulated payment)
-          </button>
-        )}
+        <Link href="/premium" className="link mt-2 inline-block text-sm">
+          Lickyeat Premium Membership →
+        </Link>
       </section>
 
-      <section className="card p-5">
-        <h2 className="font-bold">Saved addresses</h2>
-        <div className="mt-3 space-y-2">
+      <section className="card space-y-3 p-5">
+        <h2 className="font-display font-bold">Profile</h2>
+        <Field label="Name">
+          <Input value={name} onChange={(e) => setName(e.target.value)} />
+        </Field>
+        <Button variant="ghost" onClick={saveName} disabled={name === user?.name || !name.trim()}>
+          Save
+        </Button>
+      </section>
+
+      <section className="card space-y-3 p-5">
+        <h2 className="font-display font-bold">Saved addresses</h2>
+        <div className="space-y-2">
           {addrData?.addresses.map((a, i) => (
-            <div key={i} className="rounded-lg border border-black/10 px-3 py-2 text-sm">
-              {a.line1}, {a.line2 && `${a.line2}, `}
-              {a.city} {a.pincode}
+            <div key={i} className="rounded-xl border border-line px-3.5 py-2.5 text-sm">
+              <span className="font-semibold">{a.label}</span> · {a.line1}
+              {a.line2 && `, ${a.line2}`}, {a.city} {a.pincode}
             </div>
           ))}
           {addrData?.addresses.length === 0 && (
-            <p className="text-sm text-black/45">No saved addresses.</p>
+            <p className="text-sm text-muted">No saved addresses yet.</p>
           )}
         </div>
-        <div className="mt-4 grid gap-2 sm:grid-cols-2">
-          <input
-            className="input"
-            placeholder="Address line 1"
-            value={newAddr.line1}
-            onChange={(e) => setNewAddr({ ...newAddr, line1: e.target.value })}
-          />
-          <input
-            className="input"
-            placeholder="Line 2"
-            value={newAddr.line2}
-            onChange={(e) => setNewAddr({ ...newAddr, line2: e.target.value })}
-          />
-          <input
-            className="input"
-            placeholder="City"
-            value={newAddr.city}
-            onChange={(e) => setNewAddr({ ...newAddr, city: e.target.value })}
-          />
-          <input
-            className="input"
-            placeholder="Pincode"
-            value={newAddr.pincode}
-            onChange={(e) => setNewAddr({ ...newAddr, pincode: e.target.value })}
-          />
+        <div className="grid gap-2 sm:grid-cols-2">
+          <Input placeholder="Address line 1" value={addr.line1} onChange={(e) => setAddr({ ...addr, line1: e.target.value })} />
+          <Input placeholder="Line 2" value={addr.line2} onChange={(e) => setAddr({ ...addr, line2: e.target.value })} />
+          <Input placeholder="City" value={addr.city} onChange={(e) => setAddr({ ...addr, city: e.target.value })} />
+          <Input placeholder="Pincode" value={addr.pincode} onChange={(e) => setAddr({ ...addr, pincode: e.target.value })} />
         </div>
-        <button className="btn-ghost mt-3" onClick={addAddress}>
+        <Button variant="ghost" onClick={addAddress} disabled={!addr.line1 || !addr.pincode}>
           Add address
-        </button>
+        </Button>
       </section>
-
-      {msg && <p className="text-sm text-black/60">{msg}</p>}
     </div>
   );
 }

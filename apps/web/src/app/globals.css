@@ -3,32 +3,98 @@
 @tailwind utilities;
 
 :root {
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* Default brand theme (used off the brand pages). Warm amber. */
+  --brand: 230 108 42;
+  --brand-accent: 244 162 89;
+  --brand-ink: 255 255 255;
 }
 
-html,
-body {
-  background: theme("colors.cream");
-  color: theme("colors.ink");
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-cream text-ink antialiased;
+    font-feature-settings: "ss01", "cv05";
+  }
+  ::selection {
+    @apply bg-brand/20;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-display tracking-[-0.02em];
+  }
 }
 
 @layer components {
+  .container-page {
+    @apply mx-auto w-full max-w-6xl px-4 sm:px-6;
+  }
+
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex select-none items-center justify-center gap-2 rounded-full text-sm font-semibold
+      transition-[transform,background-color,box-shadow] duration-150 active:scale-[0.97]
+      disabled:pointer-events-none disabled:opacity-50;
+  }
+  .btn-lg {
+    @apply px-6 py-3 text-[15px];
+  }
+  .btn-md {
+    @apply px-5 py-2.5;
+  }
+  .btn-sm {
+    @apply px-3.5 py-1.5 text-[13px];
   }
   .btn-primary {
-    @apply btn bg-brand text-white hover:bg-brand-dark;
+    @apply btn bg-brand text-brand-ink shadow-card hover:brightness-[1.06];
+  }
+  .btn-dark {
+    @apply btn bg-ink text-cream hover:bg-charcoal;
   }
   .btn-ghost {
-    @apply btn border border-black/15 bg-white text-ink hover:border-black/30;
+    @apply btn border border-ink/15 bg-white/60 text-ink hover:border-ink/30 hover:bg-white;
   }
+  .btn-quiet {
+    @apply btn text-muted hover:text-ink;
+  }
+
   .card {
-    @apply rounded-2xl border border-black/10 bg-white shadow-sm;
+    @apply rounded-2xl border border-line bg-white shadow-card;
   }
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold;
+  }
+
+  .field-label {
+    @apply mb-1.5 block text-[13px] font-semibold text-charcoal;
+  }
+  .field {
+    @apply w-full rounded-xl border border-ink/15 bg-white px-3.5 py-2.5 text-sm text-ink
+      outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20
+      placeholder:text-muted/70;
+  }
+
+  .link {
+    @apply font-semibold text-brand underline-offset-4 hover:underline;
+  }
+
+  /* legacy aliases used by the admin section */
   .input {
-    @apply w-full rounded-lg border border-black/15 bg-white px-3 py-2 text-sm outline-none focus:border-brand;
+    @apply field;
   }
   .label {
-    @apply mb-1 block text-xs font-semibold uppercase tracking-wide text-black/50;
+    @apply field-label;
   }
+
+  .eyebrow {
+    @apply text-xs font-bold uppercase tracking-[0.18em] text-muted;
+  }
+}
+
+/* Grain / warmth on big surfaces */
+.bg-grain {
+  background-image: radial-gradient(rgb(33 27 23 / 0.04) 1px, transparent 1px);
+  background-size: 4px 4px;
 }

@@ -1,122 +1,127 @@
-"use client";
-
 import Link from "next/link";
-import useSWR from "swr";
-import type { Brand } from "@lickyeat/shared-types";
-import { useAuth } from "@/state/authStore";
+import type { Metadata } from "next";
+import { serverGet } from "@/lib/serverApi";
+import type { BrandsResponse } from "@/lib/apiTypes";
+import { BrandShowcaseCard } from "@/components/BrandShowcaseCard";
+import { HomeRecommendations } from "@/components/HomeRecommendations";
 
-export default function HomePage() {
-  const { data } = useSWR<{ brands: Brand[] }>("/brands");
-  const { user } = useAuth();
-  const brands = data?.brands ?? [];
-  const live = brands.filter((b) => b.status === "live");
+export const metadata: Metadata = {
+  description:
+    "One Lickyeat, many kitchens. Order thick shakes, zero-proof cocktails and home-style tiffin — delivered across Patna.",
+};
+
+export const revalidate = 120;
+
+export default async function HomePage() {
+  let brands: BrandsResponse["brands"] = [];
+  try {
+    ({ brands } = await serverGet<BrandsResponse>("/brands", { revalidate: 120 }));
+  } catch {
+    // API unreachable at build/render time — render the shell; ISR will fill in.
+  }
+  const live = brands.filter((b) => b.status === "live").sort((a, b) => a.sortOrder - b.sortOrder);
   const comingSoon = brands.filter((b) => b.status === "coming-soon");
 
   return (
-    <div className="space-y-12">
-      <section className="rounded-3xl bg-gradient-to-br from-brand to-brand-light px-6 py-14 text-center text-white">
-        <h1 className="mx-auto max-w-2xl text-4xl font-extrabold leading-tight sm:text-5xl">
-          Three kitchens. One Lickyeat.
-        </h1>
-        <p className="mx-auto mt-3 max-w-xl text-white/90">
-          Thick shakes, craft mocktails and ghar-jaisa tiffin — delivered fast across Patna.
-        </p>
-      </section>
+    <div>
+      {/* Hero */}
+      <section className="relative overflow-hidden border-b border-line bg-sand/50 bg-grain">
+        <div className="container-page relative grid gap-10 py-16 sm:py-24 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+          <div className="animate-fade-up">
+            <p className="eyebrow">Patna · quick delivery</p>
+            <h1 className="mt-3 font-display text-4xl font-extrabold leading-[1.05] sm:text-6xl">
+              One Lickyeat.
+              <br />
+              <span className="text-brand">Many kitchens.</span>
+            </h1>
+            <p className="mt-5 max-w-md text-lg text-charcoal">
+              Thick shakes, cocktail-grade mocktails and proper ghar-ka-khana tiffin — each its own
+              brand, all in one order flow.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link href="#brands" className="btn-primary btn-lg">
+                Order now
+              </Link>
+              <Link href="/tiffin" className="btn-ghost btn-lg">
+                Explore GG Tiffin
+              </Link>
+            </div>
+          </div>
 
-      <section>
-        <h2 className="mb-4 text-xl font-bold">Order now</h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {live.map((b) => (
-            <BrandCard key={b.brandId} brand={b} />
-          ))}
-          {live.length === 0 && <SkeletonRow />}
-        </div>
-      </section>
-
-      {user && (
-        <section>
-          <h2 className="mb-4 text-xl font-bold">Recommended for you</h2>
-          <Recommendations />
-        </section>
-      )}
-
-      {comingSoon.length > 0 && (
-        <section>
-          <h2 className="mb-4 text-xl font-bold">Coming soon</h2>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {comingSoon.map((b) => (
+          <div className="grid grid-cols-2 gap-4">
+            {live.slice(0, 4).map((b, i) => (
               <div
                 key={b.brandId}
-                className="card flex flex-col justify-between p-5 opacity-80"
-                style={{ borderColor: b.accentColor }}
+                className="animate-fade-up"
+                style={{ animationDelay: `${i * 60}ms` }}
               >
-                <div>
-                  <h3 className="text-lg font-bold" style={{ color: b.primaryColor }}>
-                    {b.name}
-                  </h3>
-                  <p className="text-sm text-black/55">{b.tagline}</p>
-                </div>
-                <span className="mt-4 inline-block w-fit rounded-full bg-black/5 px-3 py-1 text-xs font-semibold">
-                  Launching soon
-                </span>
+                <BrandShowcaseCard brand={b} />
               </div>
             ))}
           </div>
-        </section>
-      )}
-    </div>
-  );
-}
+        </div>
+      </section>
 
-function BrandCard({ brand }: { brand: Brand }) {
-  const href = brand.orderingModel === "tiffin" ? "/tiffin" : `/b/${brand.brandId}`;
-  return (
-    <Link
-      href={href}
-      className="card group flex flex-col justify-between p-5 transition hover:-translate-y-0.5 hover:shadow-md"
-      style={{ borderTopColor: brand.primaryColor, borderTopWidth: 4 }}
-    >
-      <div>
-        <h3 className="text-lg font-bold" style={{ color: brand.primaryColor }}>
-          {brand.name}
-        </h3>
-        <p className="mt-1 text-sm text-black/55">{brand.tagline}</p>
-      </div>
-      <span className="mt-4 text-sm font-semibold text-brand group-hover:underline">
-        {brand.orderingModel === "tiffin" ? "See tiffin plans →" : "Browse menu →"}
-      </span>
-    </Link>
-  );
-}
+      {/* Brands */}
+      <section id="brands" className="container-page py-16">
+        <p className="eyebrow">The brands</p>
+        <h2 className="mt-1 font-display text-3xl font-extrabold">Pick a kitchen</h2>
+        <p className="mt-2 max-w-lg text-muted">
+          Each brand has its own menu, identity and pace. Cart and checkout are shared — GG Tiffin
+          runs on its own subscription flow.
+        </p>
 
-function Recommendations() {
-  const { data } = useSWR<{ recommendations: Array<{ itemId: string; name: string; brandId: string }> }>(
-    "/account/recommendations",
-  );
-  if (!data) return <SkeletonRow />;
-  if (data.recommendations.length === 0)
-    return <p className="text-sm text-black/50">Place an order and we’ll tailor picks for you.</p>;
-  return (
-    <div className="flex flex-wrap gap-2">
-      {data.recommendations.map((r) => (
-        <Link
-          key={r.itemId}
-          href={`/b/${r.brandId}`}
-          className="rounded-full border border-black/15 bg-white px-4 py-2 text-sm hover:border-brand"
-        >
-          {r.name}
-        </Link>
-      ))}
-    </div>
-  );
-}
+        <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {brands.length === 0 && (
+            <p className="text-sm text-muted">Loading kitchens…</p>
+          )}
+          {live.map((b) => (
+            <BrandShowcaseCard key={b.brandId} brand={b} />
+          ))}
+          {comingSoon.map((b) => (
+            <BrandShowcaseCard key={b.brandId} brand={b} />
+          ))}
+        </div>
+      </section>
 
-function SkeletonRow() {
-  return (
-    <div className="col-span-full grid gap-4 sm:grid-cols-3">
-      {[0, 1, 2].map((i) => (
-        <div key={i} className="h-32 animate-pulse rounded-2xl bg-black/5" />
-      ))}
+      <HomeRecommendations />
+
+      {/* How it works */}
+      <section className="border-y border-line bg-sand/40">
+        <div className="container-page grid gap-8 py-14 sm:grid-cols-3">
+          {[
+            ["Pick a kitchen", "Browse a brand's full menu — shakes, mocktails, or a tiffin plan."],
+            ["Customise & add", "Sugar, ice, size, add-ons — all optional, all per item. Combos too."],
+            ["Track to your door", "Live status, your rider's number, and a map. Cancel by policy if plans change."],
+          ].map(([t, d], i) => (
+            <div key={t}>
+              <span className="grid h-9 w-9 place-items-center rounded-full bg-brand text-brand-ink font-display font-extrabold">
+                {i + 1}
+              </span>
+              <h3 className="mt-3 font-display text-lg font-bold">{t}</h3>
+              <p className="mt-1 text-sm text-muted">{d}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Premium strip */}
+      <section className="container-page py-16">
+        <div className="flex flex-col items-start justify-between gap-6 rounded-3xl bg-ink px-7 py-10 text-cream sm:flex-row sm:items-center">
+          <div>
+            <p className="eyebrow text-cream/50">Lickyeat Premium</p>
+            <h3 className="mt-1 font-display text-2xl font-extrabold">
+              Free delivery on everything, for 60 days
+            </h3>
+            <p className="mt-1 text-sm text-cream/70">
+              One membership across every brand. No minimum order.
+            </p>
+          </div>
+          <Link href="/premium" className="btn-primary btn-lg shrink-0">
+            See Premium
+          </Link>
+        </div>
+      </section>
     </div>
   );
 }

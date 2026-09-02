@@ -1,26 +1,37 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { display, sans } from "@/lib/fonts";
 import { Providers } from "./providers";
-import { Header } from "@/components/Header";
+import { SiteHeader } from "@/components/SiteHeader";
+import { SiteFooter } from "@/components/SiteFooter";
 import { ActiveOrderPills } from "@/components/ActiveOrderPills";
+import { ToastHost } from "@/components/ToastHost";
 
 export const metadata: Metadata = {
-  title: "Lickyeat — shakes, mocktails & home-style tiffin in Patna",
+  metadataBase: new URL("http://localhost:3100"),
+  title: {
+    default: "Lickyeat — shakes, mocktails & home-style tiffin in Patna",
+    template: "%s · Lickyeat",
+  },
   description:
-    "Order from The Blenders Club, The Alchemy Tails and GG Tiffin Service — one app, quick delivery across Patna.",
+    "One Lickyeat, many kitchens. Order thick shakes from The Blenders Club, zero-proof cocktails from The Alchemy Tails, and daily home-style tiffin from GG Tiffin Service — delivered across Patna.",
+  openGraph: {
+    title: "Lickyeat",
+    description: "Shakes, mocktails and home-style tiffin, delivered across Patna.",
+    type: "website",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className="min-h-screen font-sans">
+    <html lang="en" className={`${display.variable} ${sans.variable}`}>
+      <body className="flex min-h-screen flex-col font-sans">
         <Providers>
-          <Header />
-          <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
+          <SiteHeader />
+          <main className="flex-1">{children}</main>
           <ActiveOrderPills />
-          <footer className="mt-16 border-t border-black/10 py-8 text-center text-xs text-black/40">
-            Lickyeat · Patna, Bihar · This is a demo build.
-          </footer>
+          <ToastHost />
+          <SiteFooter />
         </Providers>
       </body>
     </html>

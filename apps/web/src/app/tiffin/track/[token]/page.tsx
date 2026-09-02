@@ -3,6 +3,7 @@
 import { use } from "react";
 import useSWR from "swr";
 import type { TiffinSingleMealOrder } from "@lickyeat/shared-types";
+import { SINGLE_MEAL_CANCELLATION_WINDOW_MINUTES } from "@lickyeat/shared-types";
 import { OrderTracker, type TrackableOrder } from "@/components/OrderTracker";
 
 export default function TiffinTrackPage({ params }: { params: Promise<{ token: string }> }) {
@@ -12,15 +13,14 @@ export default function TiffinTrackPage({ params }: { params: Promise<{ token: s
     { refreshInterval: 15000 },
   );
 
-  if (isLoading) return <p className="py-16 text-center text-black/40">Loading…</p>;
-  if (!data) return <p className="py-16 text-center text-black/50">Order not found.</p>;
+  if (isLoading) return <p className="container-page py-16 text-center text-muted">Loading…</p>;
+  if (!data) return <p className="container-page py-16 text-center text-muted">Order not found.</p>;
 
   const o = data.order;
   const trackable: TrackableOrder = {
     code: o.code,
     status: o.status,
     address: o.address,
-    contactPhone: o.contactPhone,
     paymentMethod: o.payment.method,
     paymentStatus: o.payment.status,
     total: o.total,
@@ -29,8 +29,17 @@ export default function TiffinTrackPage({ params }: { params: Promise<{ token: s
     cancellation: o.cancellation
       ? { refundPercent: o.cancellation.refundPercent, refundAmount: o.cancellation.refundAmount }
       : null,
-    cancelPolicy:
-      "Full refund if cancelled within 15 minutes of placing the order; no refund after that.",
+    cancelPolicy: `Full refund if cancelled within ${SINGLE_MEAL_CANCELLATION_WINDOW_MINUTES} minutes of placing the order; none after that.`,
+    items: [
+      {
+        name: `${o.dishName}${o.tier !== "regular" ? ` (${o.tier})` : ""}`,
+        quantity: o.quantity,
+        lineSubtotal: o.total,
+      },
+      ...o.addOns.map((a) => ({ name: a.name, quantity: 1, lineSubtotal: a.price })),
+    ],
+    pricing: null,
+    createdAt: o.createdAt,
   };
 
   return (

@@ -42,15 +42,16 @@ export function ActiveOrderPills() {
   }, [ready, user, pathname]);
 
   if (orders.length === 0) return null;
-  if (pathname.startsWith("/order/") || pathname.startsWith("/tiffin/track/")) return null;
+  const hideOn = ["/order/", "/tiffin/track/", "/cart", "/checkout", "/admin"];
+  if (hideOn.some((p) => pathname.startsWith(p))) return null;
 
   return (
-    <div className="fixed bottom-4 left-1/2 z-30 flex -translate-x-1/2 flex-wrap justify-center gap-2 px-4">
+    <div className="fixed bottom-4 left-4 z-30 flex flex-col items-start gap-2">
       {orders.map((o) => (
         <Link
           key={o.token}
           href={o.kind === "tiffin" ? `/tiffin/track/${o.token}` : `/order/${o.token}`}
-          className="rounded-full bg-ink px-4 py-2 text-xs font-semibold text-white shadow-lg hover:bg-black"
+          className="rounded-full bg-ink px-4 py-2 text-xs font-semibold text-cream shadow-lift transition hover:bg-charcoal"
         >
           Track {o.label} →
         </Link>
