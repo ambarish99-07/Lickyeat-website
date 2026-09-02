@@ -16,11 +16,24 @@ export const CouponSchema = z.object({
   /** null = valid for every brand. */
   brandId: BrandIdSchema.nullable().default(null),
   expiresAt: z.string().nullable().default(null),
+  /** When true, a customer can use this code on only one order, ever. */
+  oncePerCustomer: z.boolean().default(false),
   isActive: z.boolean().default(true),
   createdAt: z.string(),
   updatedAt: z.string(),
 });
 export type Coupon = z.infer<typeof CouponSchema>;
+
+/** A human sentence for a coupon, for the cart's "offers" list. */
+export function couponSummary(
+  c: Pick<Coupon, "kind" | "value" | "maxDiscount" | "minOrderAmount">,
+): string {
+  const off =
+    c.kind === "percent"
+      ? `${c.value}% off${c.maxDiscount ? ` (up to ₹${c.maxDiscount})` : ""}`
+      : `₹${c.value} off`;
+  return c.minOrderAmount > 0 ? `${off} on orders over ₹${c.minOrderAmount}` : off;
+}
 
 export const CreateCouponRequestSchema = CouponSchema.omit({
   id: true,
@@ -31,6 +44,7 @@ export const CreateCouponRequestSchema = CouponSchema.omit({
   minOrderAmount: true,
   brandId: true,
   expiresAt: true,
+  oncePerCustomer: true,
   isActive: true,
 });
 export type CreateCouponRequest = z.infer<typeof CreateCouponRequestSchema>;

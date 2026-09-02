@@ -1,7 +1,8 @@
 import rateLimit from "express-rate-limit";
 import { env } from "../config/env.js";
 
-const disabled = env.isTest;
+// Only rate-limit in production — the demo/dev flows create many accounts.
+const disabled = !env.isProd;
 
 /** 5 signups / 15 min per IP (matches the reference project). */
 export const signupRateLimiter = rateLimit({

@@ -9,37 +9,30 @@ import { useAuth } from "@/state/authStore";
 import { CloseIcon } from "@/components/ui/icons";
 
 const KEY = "lky_signup_prompt_seen";
+const SNOOZE_MS = 7 * 24 * 60 * 60 * 1000; // re-show a week after dismissal
 const HIDE_ON = ["/login", "/signup", "/admin", "/checkout"];
 
 export function SignupPrompt() {
   const pathname = usePathname();
-  const { user, ready, setSession } = useAuth();
+  const { setSession } = useAuth();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ name: "", contact: "", password: "" });
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (!ready) return;
-    let seen = true;
+    // Read localStorage directly so this doesn't wait on auth-store hydration.
     try {
-      seen = window.localStorage.getItem(KEY) === "1";
+      const seenAt = Number(window.localStorage.getItem(KEY) ?? 0);
+      if (seenAt && Date.now() - seenAt < SNOOZE_MS) return;
+      if (window.localStorage.getItem("lky_token")) return; // already signed in
     } catch {
-      seen = false;
+      /* private mode etc. — still show */
     }
-    if (seen || user || HIDE_ON.some((p) => pathname.startsWith(p))) return;
-    const t = setTimeout(() => setOpen(true), 1100);
+    if (HIDE_ON.some((p) => pathname.startsWith(p))) return;
+    const t = setTimeout(() => setOpen(true), 800);
     return () => clearTimeout(t);
-  }, [ready, user, pathname]);
-
-  function dismiss() {
-    try {
-      window.localStorage.setItem(KEY, "1");
-    } catch {
-      /* ignore */
-    }
-    setOpen(false);
-  }
+  }, [pathname]);
 
   useEffect(() => {
     if (!open) return;
@@ -50,7 +43,17 @@ export function SignupPrompt() {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  function dismiss() {
+    try {
+      window.localStorage.setItem(KEY, String(Date.now()));
+    } catch {
+      /* ignore */
+    }
+    setOpen(false);
+  }
 
   if (!open) return null;
 
@@ -78,7 +81,7 @@ export function SignupPrompt() {
 
   return (
     <div
-      className="fixed inset-0 z-[80] flex items-center justify-center bg-ink/50 p-4 backdrop-blur-[2px]"
+      className="fixed inset-0 z-[90] flex items-center justify-center bg-ink/50 p-4 backdrop-blur-[2px]"
       onClick={dismiss}
       role="presentation"
     >
@@ -100,9 +103,10 @@ export function SignupPrompt() {
         <div className="bg-brand px-6 py-7 text-brand-ink">
           <p className="text-xs font-bold uppercase tracking-[0.18em] opacity-70">Welcome to Lickyeat</p>
           <h2 className="mt-1.5 font-display text-2xl font-extrabold leading-tight">
-            Create an account & get ₹50 off your first order
+            Sign up &amp; get 50% off your first order
           </h2>
           <p className="mt-1.5 text-sm text-brand-ink/80">
+            Use code <span className="font-bold">WELCOME50</span> at checkout — 50% off, up to ₹100.
             One login for The Blenders Club, The Alchemy Tails and GG Tiffin.
           </p>
         </div>

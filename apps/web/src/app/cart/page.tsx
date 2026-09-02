@@ -12,6 +12,7 @@ import { estimatePricing } from "@/lib/clientPricing";
 import { rupees, assetUrl } from "@/lib/format";
 import { PriceBreakdown } from "@/components/PriceBreakdown";
 import { StoreClosedBanner } from "@/components/StoreClosedBanner";
+import { OffersList } from "@/components/OffersList";
 import { Stepper, EmptyState, Badge } from "@/components/ui/misc";
 import { Button, ButtonLink } from "@/components/ui/Button";
 
@@ -168,6 +169,15 @@ export default function CartPage() {
           </button>
         )}
         {couponMsg && <p className="text-xs text-charcoal">{couponMsg}</p>}
+
+        <OffersList
+          brandId={brandId}
+          appliedCode={appliedCoupon}
+          onApply={(code) => {
+            setCouponInput(code);
+            setAppliedCoupon(code);
+          }}
+        />
 
         {pricing && (
           <PriceBreakdown pricing={pricing} pending={!serverPricing || loading} />

@@ -4,7 +4,7 @@ import { useState } from "react";
 import useSWR from "swr";
 import type { Coupon } from "@lickyeat/shared-types";
 import { api } from "@/lib/api";
-import { rupees } from "@/lib/format";
+import { couponSummary } from "@lickyeat/shared-types";
 
 export default function AdminCoupons() {
   const { data, mutate } = useSWR<{ coupons: Coupon[] }>("/coupons");
@@ -12,8 +12,10 @@ export default function AdminCoupons() {
     code: "",
     kind: "percent" as "percent" | "flat",
     value: 10,
+    maxDiscount: 0,
     minOrderAmount: 0,
     brandId: "",
+    oncePerCustomer: false,
   });
 
   async function create() {
@@ -21,8 +23,10 @@ export default function AdminCoupons() {
       code: form.code,
       kind: form.kind,
       value: Number(form.value),
+      maxDiscount: form.kind === "percent" && form.maxDiscount ? Number(form.maxDiscount) : null,
       minOrderAmount: Number(form.minOrderAmount),
       brandId: form.brandId || null,
+      oncePerCustomer: form.oncePerCustomer,
     });
     setForm({ ...form, code: "" });
     mutate();
@@ -58,6 +62,15 @@ export default function AdminCoupons() {
           value={form.value}
           onChange={(e) => setForm({ ...form, value: Number(e.target.value) })}
         />
+        {form.kind === "percent" && (
+          <input
+            type="number"
+            className="input !w-24"
+            placeholder="cap ₹"
+            value={form.maxDiscount}
+            onChange={(e) => setForm({ ...form, maxDiscount: Number(e.target.value) })}
+          />
+        )}
         <input
           type="number"
           className="input !w-28"
@@ -71,6 +84,14 @@ export default function AdminCoupons() {
           value={form.brandId}
           onChange={(e) => setForm({ ...form, brandId: e.target.value })}
         />
+        <label className="flex items-center gap-1.5 text-xs">
+          <input
+            type="checkbox"
+            checked={form.oncePerCustomer}
+            onChange={(e) => setForm({ ...form, oncePerCustomer: e.target.checked })}
+          />
+          once / customer
+        </label>
         <button className="btn-primary !py-2" onClick={create}>
           Add
         </button>
@@ -80,10 +101,10 @@ export default function AdminCoupons() {
         {data?.coupons.map((c) => (
           <div key={c.id} className="card flex items-center gap-3 p-3 text-sm">
             <span className="font-mono font-semibold">{c.code}</span>
-            <span>
-              {c.kind === "percent" ? `${c.value}%` : rupees(c.value)}
-              {c.minOrderAmount ? ` · min ${rupees(c.minOrderAmount)}` : ""}
-              {c.brandId ? ` · ${c.brandId}` : ""}
+            <span className="text-charcoal">
+              {couponSummary(c)}
+              {c.brandId ? ` · ${c.brandId} only` : ""}
+              {c.oncePerCustomer ? " · one per account" : ""}
             </span>
             <button
               className={`ml-auto rounded-full px-2 py-0.5 text-xs font-semibold ${

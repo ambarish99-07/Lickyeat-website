@@ -34,6 +34,7 @@ pricingRouter.post(
       ? await resolveCouponForCart(body.couponCode, {
           subtotal: subtotalForCoupon,
           brandId: cart.brandId,
+          userId: req.user?.id ?? null,
         })
       : { discountAmount: 0, code: null as string | null, message: "" };
 

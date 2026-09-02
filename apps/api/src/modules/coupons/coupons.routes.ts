@@ -6,6 +6,14 @@ import * as service from "./coupons.service.js";
 
 export const couponsRouter: Router = Router();
 
+// Public — the offers shown in the cart.
+couponsRouter.get(
+  "/available",
+  asyncHandler(async (_req, res) => {
+    res.json({ coupons: await service.listAvailableCoupons() });
+  }),
+);
+
 couponsRouter.get(
   "/",
   requireAuth,

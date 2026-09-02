@@ -9,6 +9,7 @@ const couponSchema = new Schema(
     minOrderAmount: { type: Number, default: 0 },
     brandId: { type: String, default: null, lowercase: true },
     expiresAt: { type: Date, default: null },
+    oncePerCustomer: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
   },
   { timestamps: true },

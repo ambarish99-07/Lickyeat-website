@@ -26,8 +26,17 @@ const userSchema = new Schema(
   { timestamps: true },
 );
 
-userSchema.index({ email: 1 }, { unique: true, sparse: true });
-userSchema.index({ phone: 1 }, { unique: true, sparse: true });
+// Partial (not sparse) — a `sparse` unique index still collides on multiple
+// explicit `null`s (e.g. every phone-less signup + the demo admin). A partial
+// filter only enforces uniqueness on rows where the field is actually a string.
+userSchema.index(
+  { email: 1 },
+  { unique: true, partialFilterExpression: { email: { $type: "string" } } },
+);
+userSchema.index(
+  { phone: 1 },
+  { unique: true, partialFilterExpression: { phone: { $type: "string" } } },
+);
 
 export type UserDoc = InferSchemaType<typeof userSchema>;
 export const UserModel = model("User", userSchema);

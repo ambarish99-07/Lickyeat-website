@@ -152,8 +152,14 @@ every 10 orders (order #…6 → 50% off cheapest cold-coffee unit; #…10/20/�
 additive. Then **coupon** (`/coupons`), additive, clamped, before tax. Delivery: free at subtotal
 ≥ ₹499, or premium+radius, or an active **paid Premium Membership** (₹21 / 60 days, Razorpay-only),
 else ₹39. Tax 5% on `subtotal − discount − reward − coupon`. Per-item `salePercent` stacks with all
-of the above. Combos: always 15% off constituents' current base prices (`computeComboPrice`), and
-combo subtotal is excluded from the quantity-tier base.
+of the above. Combos: 15% off constituents' current base prices (`computeComboPrice`, or a combo's
+own `discountPercent`), and combo subtotal is excluded from the quantity-tier base.
+
+**Coupons** (real codes): `WELCOME50` = 50% off up to ₹100, **once per customer**; `FLAT50…FLAT400`
+= flat ₹ off above a minimum. `Coupon.oncePerCustomer` is enforced in `resolveCouponForCart` (via
+`ctx.userId` — checks `Order.pricing.couponCode` on the customer's non-cancelled orders). Public
+`GET /coupons/available` powers the cart's "Offers for you" list (`components/OffersList.tsx`);
+`couponSummary()` in shared-types is the display-string helper.
 
 ---
 

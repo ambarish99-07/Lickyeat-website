@@ -125,6 +125,7 @@ export const OrderSchema = z.object({
   address: AddressSchema,
   lines: z.array(OrderLineSnapshotSchema),
   pricing: PricingResultSchema,
+  couponCode: z.string().nullable().default(null),
   discountReason: DiscountReasonSchema,
   rewardReason: RewardReasonSchema,
   isPremiumMemberAtOrder: z.boolean(),

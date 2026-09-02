@@ -260,7 +260,7 @@ export async function runSeed(opts: { wipe?: boolean } = {}) {
   // ------------------------------------------------------------- coupons ----
   await CouponModel.deleteMany({});
   await CouponModel.create([
-    { code: "WELCOME50", kind: "percent", value: 50, maxDiscount: 100, minOrderAmount: 0, brandId: null, isActive: true },
+    { code: "WELCOME50", kind: "percent", value: 50, maxDiscount: 100, minOrderAmount: 0, brandId: null, oncePerCustomer: true, isActive: true },
     { code: "FLAT50", kind: "flat", value: 50, minOrderAmount: 200, brandId: null, isActive: true },
     { code: "FLAT100", kind: "flat", value: 100, minOrderAmount: 499, brandId: null, isActive: true },
     { code: "FLAT125", kind: "flat", value: 125, minOrderAmount: 599, brandId: null, isActive: true },

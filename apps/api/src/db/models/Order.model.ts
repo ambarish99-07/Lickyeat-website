@@ -51,6 +51,8 @@ const orderSchema = new Schema(
     address: { type: addressSubSchema, required: true },
     lines: { type: [lineSnapshotSchema], default: [] },
     pricing: { type: Schema.Types.Mixed, required: true },
+    /** Top-level mirror of pricing.couponCode — indexed for once-per-customer checks. */
+    couponCode: { type: String, default: null, index: true },
     discountReason: { type: String, enum: DISCOUNT_REASONS, default: "none" },
     rewardReason: { type: String, enum: REWARD_REASONS, default: "none" },
     isPremiumMemberAtOrder: { type: Boolean, default: false },
