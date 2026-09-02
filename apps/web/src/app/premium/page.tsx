@@ -40,18 +40,18 @@ export default function PremiumPage() {
 
   return (
     <div className="container-page py-12">
-      <div className="mx-auto max-w-xl overflow-hidden rounded-3xl bg-ink text-cream">
+      <div className="surface-brand mx-auto max-w-xl overflow-hidden rounded-3xl">
         <div className="bg-grain px-8 py-12">
-          <p className="eyebrow text-cream/50">Lickyeat Premium</p>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-ink/55">Lickyeat Premium</p>
           <h1 className="mt-2 font-display text-4xl font-extrabold">
             ₹{PREMIUM_MEMBERSHIP_PRICE} · {PREMIUM_MEMBERSHIP_DAYS} days
           </h1>
-          <p className="mt-3 text-cream/75">
+          <p className="mt-3 text-brand-ink/80">
             Free delivery on every order, across every Lickyeat kitchen. No minimum, no distance
             cap. Separate from the loyalty tier — anyone can buy it.
           </p>
 
-          <ul className="mt-6 space-y-2 text-sm text-cream/80">
+          <ul className="mt-6 space-y-2 text-sm text-brand-ink/85">
             <li>✓ ₹0 delivery fee on TBC, Alchemy Tails and GG Tiffin single meals</li>
             <li>✓ Stacks with coupons and loyalty discounts</li>
             <li>✓ Auto-applied at checkout while active</li>
@@ -59,16 +59,16 @@ export default function PremiumPage() {
 
           <div className="mt-8">
             {!ready ? null : !user ? (
-              <ButtonLink href="/login?next=/premium" size="lg">
+              <ButtonLink href="/login?next=/premium" size="lg" variant="dark">
                 Log in to get Premium
               </ButtonLink>
             ) : status?.active ? (
-              <div className="rounded-2xl bg-cream/10 px-4 py-3 text-sm">
-                <p className="font-semibold text-cream">
+              <div className="rounded-2xl bg-brand-ink/10 px-4 py-3 text-sm">
+                <p className="font-semibold text-brand-ink">
                   Active — expires {status.expiresAt ? formatDate(status.expiresAt) : ""}
                 </p>
                 {status.expiringSoon && (
-                  <p className="mt-1 text-cream/70">
+                  <p className="mt-1 text-brand-ink/70">
                     Expiring in {status.daysRemaining} day{status.daysRemaining === 1 ? "" : "s"}.
                     <button className="ml-1 underline" onClick={buy}>
                       Renew now
@@ -77,12 +77,12 @@ export default function PremiumPage() {
                 )}
               </div>
             ) : (
-              <Button size="lg" onClick={buy}>
+              <Button size="lg" variant="dark" onClick={buy}>
                 Get Premium — simulated payment
               </Button>
             )}
           </div>
-          <p className="mt-3 text-xs text-cream/40">
+          <p className="mt-3 text-xs text-brand-ink/45">
             Payment is simulated in this demo (Razorpay-only in production).
           </p>
         </div>

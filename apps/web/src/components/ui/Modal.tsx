@@ -38,7 +38,7 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="flex max-h-[92vh] w-full max-w-lg animate-fade-up flex-col overflow-hidden rounded-t-3xl bg-white shadow-lift sm:rounded-3xl"
+        className="flex max-h-[92vh] w-full max-w-lg animate-fade-up flex-col overflow-hidden rounded-t-3xl bg-surface shadow-lift sm:rounded-3xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-line px-5 py-3.5">

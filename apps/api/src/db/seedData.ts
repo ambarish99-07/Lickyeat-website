@@ -259,8 +259,8 @@ export async function runSeed(opts: { wipe?: boolean } = {}) {
       status: "live",
       logoUrl: brandLogoUrl("tbc"),
       heroImageUrl: brandHeroUrl("tbc"),
-      primaryColor: "#6B3F2A",
-      accentColor: "#D98E4A",
+      primaryColor: "#0EA5E9",
+      accentColor: "#7DD3FC",
       sortOrder: 1,
     },
     {
@@ -273,8 +273,8 @@ export async function runSeed(opts: { wipe?: boolean } = {}) {
       status: "live",
       logoUrl: brandLogoUrl("alchemy-tails"),
       heroImageUrl: brandHeroUrl("alchemy-tails"),
-      primaryColor: "#8A6D1F",
-      accentColor: "#C9A227",
+      primaryColor: "#0D9488",
+      accentColor: "#5EEAD4",
       sortOrder: 2,
     },
     {
@@ -287,8 +287,8 @@ export async function runSeed(opts: { wipe?: boolean } = {}) {
       status: "live",
       logoUrl: brandLogoUrl("gg-tiffin"),
       heroImageUrl: brandHeroUrl("gg-tiffin"),
-      primaryColor: "#7A5A22",
-      accentColor: "#B8860B",
+      primaryColor: "#16A34A",
+      accentColor: "#86EFAC",
       sortOrder: 3,
     },
     {
@@ -301,8 +301,8 @@ export async function runSeed(opts: { wipe?: boolean } = {}) {
       status: "coming-soon",
       logoUrl: null,
       heroImageUrl: null,
-      primaryColor: "#9f1239",
-      accentColor: "#f59e0b",
+      primaryColor: "#4F46E5",
+      accentColor: "#A5B4FC",
       sortOrder: 4,
     },
   ]);

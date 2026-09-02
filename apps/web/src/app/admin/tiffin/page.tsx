@@ -41,7 +41,7 @@ export default function AdminTiffin() {
 
       <section className="card p-5">
         <h2 className="font-bold">Emergency closure</h2>
-        <p className="text-sm text-black/50">
+        <p className="text-sm text-muted">
           One-shot and irreversible: marks affected subscription meals closed, pushes those plans&rsquo;
           end dates out, and auto-cancels + refunds single-meal orders in range.
         </p>
@@ -74,7 +74,7 @@ export default function AdminTiffin() {
         </div>
         <div className="mt-4 space-y-1 text-sm">
           {closures?.closures.map((c) => (
-            <div key={c.id} className="rounded border border-black/10 px-3 py-1.5">
+            <div key={c.id} className="rounded border border-line px-3 py-1.5">
               {formatDate(c.startDate)} – {formatDate(c.endDate)} {c.reason && `· ${c.reason}`}
             </div>
           ))}
@@ -89,10 +89,10 @@ export default function AdminTiffin() {
             return (
               <div key={o.id} className="flex flex-wrap items-center gap-3 text-sm">
                 <span className="font-semibold">{o.code}</span>
-                <span className="text-black/55">
+                <span className="text-charcoal">
                   {o.dishName} · {o.meal} · {o.date} · {rupees(o.total)}
                 </span>
-                <span className="rounded-full bg-black/5 px-2 py-0.5 text-xs capitalize">
+                <span className="rounded-full bg-ink/5 px-2 py-0.5 text-xs capitalize">
                   {o.status.replace(/-/g, " ")}
                 </span>
                 {next && (
@@ -103,7 +103,7 @@ export default function AdminTiffin() {
               </div>
             );
           })}
-          {orders?.orders.length === 0 && <p className="text-black/50">No orders yet.</p>}
+          {orders?.orders.length === 0 && <p className="text-muted">No orders yet.</p>}
         </div>
       </section>
     </div>

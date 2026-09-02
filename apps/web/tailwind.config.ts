@@ -5,21 +5,22 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Site palette — warm, appetising, brand-neutral.
-        cream: "#fdf9f3",
-        sand: "#f4ece0",
-        ink: "#211b17",
-        charcoal: "#3d352e",
-        muted: "#8a7d70",
-        line: "#e7ddd980",
+        // Semantic tokens — driven by CSS variables (see globals.css), so they
+        // swap for dark mode automatically.
+        cream: "rgb(var(--bg) / <alpha-value>)",
+        sand: "rgb(var(--bg-2) / <alpha-value>)",
+        surface: "rgb(var(--surface) / <alpha-value>)",
+        ink: "rgb(var(--text) / <alpha-value>)",
+        charcoal: "rgb(var(--text-2) / <alpha-value>)",
+        muted: "rgb(var(--text-3) / <alpha-value>)",
+        line: "rgb(var(--line) / <alpha-value>)",
 
         // Per-brand, driven by CSS variables that <BrandTheme> sets.
-        // Fall back to a warm default so non-brand pages still render.
         brand: {
           DEFAULT: "rgb(var(--brand) / <alpha-value>)",
           accent: "rgb(var(--brand-accent) / <alpha-value>)",
           ink: "rgb(var(--brand-ink) / <alpha-value>)",
-          soft: "rgb(var(--brand) / 0.10)",
+          soft: "rgb(var(--brand) / 0.12)",
         },
       },
       fontFamily: {
@@ -32,8 +33,8 @@ export default {
         "3xl": "1.75rem",
       },
       boxShadow: {
-        card: "0 1px 2px rgb(33 27 23 / 0.04), 0 8px 24px -12px rgb(33 27 23 / 0.12)",
-        lift: "0 2px 6px rgb(33 27 23 / 0.06), 0 24px 48px -20px rgb(33 27 23 / 0.22)",
+        card: "0 1px 2px rgb(var(--shadow) / 0.04), 0 8px 24px -12px rgb(var(--shadow) / 0.12)",
+        lift: "0 2px 6px rgb(var(--shadow) / 0.06), 0 24px 48px -20px rgb(var(--shadow) / 0.22)",
       },
       keyframes: {
         "fade-up": {

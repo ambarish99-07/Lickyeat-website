@@ -27,7 +27,7 @@ export function HomeRecommendations() {
           <Link
             key={r.itemId}
             href={`/b/${r.brandId}`}
-            className="rounded-full border border-ink/15 bg-white px-4 py-2 text-sm font-medium transition hover:border-brand hover:text-brand"
+            className="rounded-full border border-ink/15 bg-surface px-4 py-2 text-sm font-medium transition hover:border-brand hover:text-brand"
           >
             {r.name}
           </Link>

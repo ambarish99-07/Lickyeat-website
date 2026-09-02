@@ -88,7 +88,7 @@ export function TiffinLanding({
                 {row.days.map((dish, i) => {
                   const img = assetUrl(dish.imageUrl);
                   return (
-                    <div key={i} className="w-36 shrink-0 overflow-hidden rounded-xl border border-line bg-white">
+                    <div key={i} className="w-36 shrink-0 overflow-hidden rounded-xl border border-line bg-surface">
                       {img ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={img} alt="" className="h-20 w-full object-cover" />

@@ -6,6 +6,7 @@ import { useAuth } from "@/state/authStore";
 import { useCart } from "@/state/cartStore";
 import { cn } from "@/components/ui/misc";
 import { BagIcon, UserIcon } from "@/components/ui/icons";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export function SiteHeader() {
   const { user, ready, logout } = useAuth();
@@ -34,6 +35,7 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-1.5 sm:gap-2">
+          <ThemeToggle />
           {ready && user ? (
             <>
               {/* logged in → account is an icon */}
@@ -41,7 +43,7 @@ export function SiteHeader() {
                 href="/account"
                 aria-label={`Account — ${user.name}`}
                 title={user.name}
-                className="grid h-9 w-9 place-items-center rounded-full border border-ink/15 bg-white/60 text-ink transition hover:border-ink/30 hover:bg-white"
+                className="grid h-9 w-9 place-items-center rounded-full border border-ink/15 bg-surface/70 text-ink transition hover:border-ink/30 hover:bg-surface"
               >
                 <UserIcon className="h-4 w-4" />
               </Link>
@@ -101,6 +103,7 @@ function AdminHeader() {
           Lickyeat <span className="text-cream/50">Admin</span>
         </Link>
         <div className="flex items-center gap-3 text-sm">
+          <ThemeToggle className="grid h-8 w-8 place-items-center rounded-full border border-cream/20 text-cream/80 hover:text-cream" />
           <Link href="/" className="text-cream/70 hover:text-cream">
             View site
           </Link>

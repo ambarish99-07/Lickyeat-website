@@ -3,22 +3,66 @@
 @tailwind utilities;
 
 :root {
-  /* Default brand theme (used off the brand pages). Warm amber. */
-  --brand: 230 108 42;
-  --brand-accent: 244 162 89;
+  /* Semantic surface / text / line tokens — swapped for dark mode below.
+     Space-separated RGB channels (Tailwind alpha syntax). */
+  --bg: 244 249 253; /* very light sky-tinted */
+  --bg-2: 234 244 251;
+  --surface: 255 255 255;
+  --text: 20 33 43;
+  --text-2: 51 65 78;
+  --text-3: 108 122 135;
+  --line: 214 228 238;
+  --shadow: 20 33 43;
+
+  /* Brand — light, glossy sky blue. On brand pages <BrandTheme> overrides these. */
+  --brand: 14 165 233; /* sky-500 */
+  --brand-accent: 125 211 252; /* sky-300 */
   --brand-ink: 255 255 255;
+}
+
+:root[data-theme="dark"] {
+  --bg: 12 17 23;
+  --bg-2: 20 27 35;
+  --surface: 24 32 41;
+  --text: 233 238 243;
+  --text-2: 197 205 214;
+  --text-3: 146 157 168;
+  --line: 42 53 65;
+  --shadow: 0 0 0;
+
+  --brand: 56 189 248; /* sky-400 — brighter on a dark ground */
+  --brand-accent: 125 211 252;
+  --brand-ink: 6 20 30;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: 12 17 23;
+    --bg-2: 20 27 35;
+    --surface: 24 32 41;
+    --text: 233 238 243;
+    --text-2: 197 205 214;
+    --text-3: 146 157 168;
+    --line: 42 53 65;
+    --shadow: 0 0 0;
+
+    --brand: 56 189 248;
+    --brand-accent: 125 211 252;
+    --brand-ink: 6 20 30;
+  }
 }
 
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;
+    color-scheme: light dark;
   }
   body {
     @apply bg-cream text-ink antialiased;
     font-feature-settings: "ss01", "cv05";
   }
   ::selection {
-    @apply bg-brand/20;
+    @apply bg-brand/25;
   }
   h1,
   h2,
@@ -26,20 +70,22 @@
   h4 {
     @apply font-display tracking-[-0.02em];
   }
+  img {
+    color-scheme: light; /* keep photos true regardless of theme */
+  }
 }
 
 @layer components {
   .container-page {
     @apply mx-auto w-full max-w-[1600px] px-4 sm:px-6 lg:px-10 xl:px-14;
   }
-  /* Narrower rail for reading-width content (forms, checkout, legal). */
   .container-narrow {
     @apply mx-auto w-full max-w-3xl px-4 sm:px-6;
   }
 
   .btn {
     @apply inline-flex select-none items-center justify-center gap-2 rounded-full text-sm font-semibold
-      transition-[transform,background-color,box-shadow] duration-150 active:scale-[0.97]
+      transition-[transform,filter,box-shadow] duration-150 active:scale-[0.97]
       disabled:pointer-events-none disabled:opacity-50;
   }
   .btn-lg {
@@ -51,21 +97,35 @@
   .btn-sm {
     @apply px-3.5 py-1.5 text-[13px];
   }
+  /* Glossy sky-blue: lighter sheen up top, base below, soft coloured glow. */
   .btn-primary {
-    @apply btn bg-brand text-brand-ink shadow-card hover:brightness-[1.06];
+    @apply btn text-brand-ink;
+    background-image: linear-gradient(
+      to bottom,
+      rgb(var(--brand-accent)),
+      rgb(var(--brand)) 52%,
+      rgb(var(--brand))
+    );
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.4),
+      0 1px 2px rgb(var(--shadow) / 0.12),
+      0 10px 22px -10px rgb(var(--brand) / 0.55);
+  }
+  .btn-primary:hover {
+    filter: brightness(1.05) saturate(1.05);
   }
   .btn-dark {
-    @apply btn bg-ink text-cream hover:bg-charcoal;
+    @apply btn bg-ink text-cream hover:brightness-110;
   }
   .btn-ghost {
-    @apply btn border border-ink/15 bg-white/60 text-ink hover:border-ink/30 hover:bg-white;
+    @apply btn border border-ink/15 bg-surface/70 text-ink hover:border-ink/30 hover:bg-surface;
   }
   .btn-quiet {
     @apply btn text-muted hover:text-ink;
   }
 
   .card {
-    @apply rounded-2xl border border-line bg-white shadow-card;
+    @apply rounded-2xl border border-line bg-surface shadow-card;
   }
   .chip {
     @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold;
@@ -75,8 +135,8 @@
     @apply mb-1.5 block text-[13px] font-semibold text-charcoal;
   }
   .field {
-    @apply w-full rounded-xl border border-ink/15 bg-white px-3.5 py-2.5 text-sm text-ink
-      outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20
+    @apply w-full rounded-xl border border-ink/15 bg-surface px-3.5 py-2.5 text-sm text-ink
+      outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/25
       placeholder:text-muted/70;
   }
 
@@ -95,10 +155,21 @@
   .eyebrow {
     @apply text-xs font-bold uppercase tracking-[0.18em] text-muted;
   }
+
+  /* A glossy brand-coloured panel (signup modal header, premium hero, brand hero). */
+  .surface-brand {
+    @apply bg-brand text-brand-ink;
+    background-image: linear-gradient(
+      140deg,
+      rgb(var(--brand-accent)) 0%,
+      rgb(var(--brand)) 45%,
+      rgb(var(--brand)) 100%
+    );
+  }
 }
 
-/* Grain / warmth on big surfaces */
+/* Subtle dotted texture on big surfaces. */
 .bg-grain {
-  background-image: radial-gradient(rgb(33 27 23 / 0.04) 1px, transparent 1px);
+  background-image: radial-gradient(rgb(var(--shadow) / 0.05) 1px, transparent 1px);
   background-size: 4px 4px;
 }

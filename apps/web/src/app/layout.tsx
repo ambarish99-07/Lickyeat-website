@@ -24,9 +24,15 @@ export const metadata: Metadata = {
   },
 };
 
+// Runs before first paint — applies a saved light/dark choice so there's no flash.
+const themeScript = `try{var t=localStorage.getItem('lky_theme');if(t==='dark'||t==='light')document.documentElement.dataset.theme=t;}catch(e){}`;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${display.variable} ${sans.variable}`}>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body className="flex min-h-screen flex-col font-sans">
         <Providers>
           <AppBanner />

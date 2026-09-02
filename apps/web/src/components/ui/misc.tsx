@@ -57,7 +57,7 @@ export function Stepper({
 }) {
   const dim = size === "sm" ? "h-8 w-8 text-base" : "h-10 w-10 text-lg";
   return (
-    <div className="inline-flex items-center gap-1 rounded-full border border-ink/15 bg-white p-1">
+    <div className="inline-flex items-center gap-1 rounded-full border border-ink/15 bg-surface p-1">
       <button
         type="button"
         aria-label="Decrease"

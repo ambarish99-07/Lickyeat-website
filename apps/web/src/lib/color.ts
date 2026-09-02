@@ -3,7 +3,7 @@ export function hexToRgbChannels(hex: string): string {
   const h = hex.replace("#", "").trim();
   const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
   const n = parseInt(full, 16);
-  if (Number.isNaN(n) || full.length !== 6) return "230 108 42";
+  if (Number.isNaN(n) || full.length !== 6) return "14 165 233";
   return `${(n >> 16) & 255} ${(n >> 8) & 255} ${n & 255}`;
 }
 

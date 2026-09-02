@@ -16,7 +16,7 @@ export function BrandShowcaseCard({ brand }: { brand: Brand }) {
     <BrandTheme brand={brand} className="group">
       <Link
         href={href}
-        className="relative flex h-full flex-col justify-between overflow-hidden rounded-3xl border border-line bg-white p-6 shadow-card transition duration-200 hover:-translate-y-1 hover:shadow-lift"
+        className="relative flex h-full flex-col justify-between overflow-hidden rounded-3xl border border-line bg-surface p-6 shadow-card transition duration-200 hover:-translate-y-1 hover:shadow-lift"
       >
         <div
           aria-hidden

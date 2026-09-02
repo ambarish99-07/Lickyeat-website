@@ -113,17 +113,17 @@ export default async function HomePage() {
 
       {/* Premium strip */}
       <section className="container-page py-16">
-        <div className="flex flex-col items-start justify-between gap-6 rounded-3xl bg-ink px-7 py-10 text-cream sm:flex-row sm:items-center">
+        <div className="surface-brand flex flex-col items-start justify-between gap-6 rounded-3xl px-7 py-10 sm:flex-row sm:items-center">
           <div>
-            <p className="eyebrow text-cream/50">Lickyeat Premium</p>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-ink/60">Lickyeat Premium</p>
             <h3 className="mt-1 font-display text-2xl font-extrabold">
               Free delivery on everything, for 60 days
             </h3>
-            <p className="mt-1 text-sm text-cream/70">
+            <p className="mt-1 text-sm text-brand-ink/75">
               One membership across every brand. No minimum order.
             </p>
           </div>
-          <Link href="/premium" className="btn-primary btn-lg shrink-0">
+          <Link href="/premium" className="btn-dark btn-lg shrink-0">
             See Premium
           </Link>
         </div>

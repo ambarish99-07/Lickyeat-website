@@ -19,14 +19,14 @@ const BENEFITS: Array<[string, string]> = [
 export default function AppPage() {
   return (
     <div>
-      <section className="border-b border-line bg-ink text-cream">
+      <section className="surface-brand border-b border-line">
         <div className="container-page grid gap-10 py-16 sm:py-24 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
           <div>
-            <p className="eyebrow text-cream/50">The Lickyeat app</p>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-ink/55">The Lickyeat app</p>
             <h1 className="mt-3 font-display text-4xl font-extrabold leading-[1.05] sm:text-6xl">
               Download the app to enjoy all the benefits.
             </h1>
-            <p className="mt-5 max-w-lg text-lg text-cream/75">
+            <p className="mt-5 max-w-lg text-lg text-brand-ink/80">
               Everything you can do here, plus live tracking, one-tap reorders and rewards that only
               exist in the app — for The Blenders Club, The Alchemy Tails and GG Tiffin.
             </p>
@@ -34,7 +34,7 @@ export default function AppPage() {
               <StoreBadge store="App Store" />
               <StoreBadge store="Google Play" />
             </div>
-            <p className="mt-3 text-xs text-cream/40">
+            <p className="mt-3 text-xs text-brand-ink/45">
               Store listings launching soon — meanwhile, everything works right here on the web.
             </p>
           </div>
@@ -72,17 +72,17 @@ export default function AppPage() {
 
 function StoreBadge({ store }: { store: string }) {
   return (
-    <span className="inline-flex items-center gap-2.5 rounded-xl border border-cream/20 bg-white/5 px-4 py-2.5">
+    <span className="inline-flex items-center gap-2.5 rounded-xl border border-brand-ink/20 bg-brand-ink/5 px-4 py-2.5 text-brand-ink">
       <span aria-hidden className="text-lg">
         {store === "App Store" ? "" : "▶"}
       </span>
       <span className="leading-tight">
-        <span className="block text-[10px] uppercase tracking-wide text-cream/50">
+        <span className="block text-[10px] uppercase tracking-wide text-brand-ink/55">
           {store === "App Store" ? "Download on the" : "Get it on"}
         </span>
         <span className="block text-sm font-bold">{store}</span>
       </span>
-      <span className="ml-1 rounded-full bg-cream/10 px-2 py-0.5 text-[10px] font-bold text-cream/60">
+      <span className="ml-1 rounded-full bg-brand-ink/10 px-2 py-0.5 text-[10px] font-bold text-brand-ink/60">
         soon
       </span>
     </span>
@@ -92,7 +92,7 @@ function StoreBadge({ store }: { store: string }) {
 function PhoneMock() {
   return (
     <div className="rounded-[2.2rem] border-[10px] border-ink/80 bg-cream p-3 shadow-lift">
-      <div className="overflow-hidden rounded-[1.4rem] bg-white">
+      <div className="overflow-hidden rounded-[1.4rem] bg-surface">
         <div className="bg-brand px-4 py-3 text-brand-ink">
           <p className="text-[11px] font-bold uppercase tracking-wide opacity-70">Order LKY-8F3A</p>
           <p className="font-display text-base font-extrabold">Out for delivery</p>

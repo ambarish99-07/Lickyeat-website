@@ -15,24 +15,24 @@ export function SignupPerks() {
       </h2>
 
       <div className="mt-6 grid gap-5 md:grid-cols-2">
-        {/* Buy 1 Get 1 — warm */}
-        <div className="relative overflow-hidden rounded-3xl border border-amber-200 bg-gradient-to-br from-amber-50 to-brand-soft p-7">
-          <span className="grid h-11 w-11 place-items-center rounded-full bg-brand/15 text-brand">
+        {/* Buy 1 Get 1 */}
+        <div className="surface-brand relative overflow-hidden rounded-3xl p-7">
+          <span className="grid h-11 w-11 place-items-center rounded-full bg-brand-ink/15 text-brand-ink">
             <SparkleIcon className="h-5 w-5" />
           </span>
-          <h3 className="mt-4 font-display text-xl font-extrabold text-ink">Buy 1 Get 1 Free</h3>
-          <p className="mt-1.5 max-w-sm text-sm text-charcoal">
+          <h3 className="mt-4 font-display text-xl font-extrabold text-brand-ink">Buy 1 Get 1 Free</h3>
+          <p className="mt-1.5 max-w-sm text-sm text-brand-ink/80">
             On your first order after signing up, add code <span className="font-bold">BOGO1</span> —
             the cheapest eligible drink comes off, automatically. Excludes combos.
           </p>
-          <Link href="/signup" className="btn-primary btn-md mt-5">
+          <Link href="/signup" className="btn-dark btn-md mt-5">
             Create an account
           </Link>
         </div>
 
-        {/* Premium — cool */}
-        <div className="relative overflow-hidden rounded-3xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-teal-50 p-7">
-          <span className="grid h-11 w-11 place-items-center rounded-full bg-emerald-600/15 text-emerald-700">
+        {/* Premium */}
+        <div className="card relative overflow-hidden rounded-3xl p-7">
+          <span className="grid h-11 w-11 place-items-center rounded-full bg-brand-soft text-brand">
             <BoltIcon className="h-5 w-5" />
           </span>
           <h3 className="mt-4 font-display text-xl font-extrabold text-ink">
@@ -42,10 +42,7 @@ export function SignupPerks() {
             Free delivery on every order across every kitchen — no minimum, no distance cap, join
             anytime. Manage it from your account.
           </p>
-          <Link
-            href="/premium"
-            className="btn-md mt-5 inline-flex items-center justify-center gap-2 rounded-full bg-emerald-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-800"
-          >
+          <Link href="/premium" className="btn-primary btn-md mt-5">
             See Premium
           </Link>
         </div>

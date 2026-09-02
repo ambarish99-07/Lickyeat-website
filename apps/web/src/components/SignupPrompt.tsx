@@ -89,25 +89,24 @@ export function SignupPrompt() {
         role="dialog"
         aria-modal="true"
         aria-label="Sign up for Lickyeat"
-        className="relative w-full max-w-md animate-fade-up overflow-hidden rounded-3xl bg-white shadow-lift"
+        className="relative w-full max-w-md animate-fade-up overflow-hidden rounded-3xl bg-surface shadow-lift"
         onClick={(e) => e.stopPropagation()}
       >
         <button
           onClick={dismiss}
           aria-label="Close"
-          className="absolute right-3 top-3 z-10 grid h-8 w-8 place-items-center rounded-full bg-black/5 text-charcoal hover:bg-black/10"
+          className="absolute right-3 top-3 z-10 grid h-8 w-8 place-items-center rounded-full bg-brand-ink/15 text-brand-ink hover:bg-brand-ink/25"
         >
           <CloseIcon className="h-4 w-4" />
         </button>
 
-        <div className="bg-brand px-6 py-7 text-brand-ink">
+        <div className="surface-brand px-6 py-7">
           <p className="text-xs font-bold uppercase tracking-[0.18em] opacity-70">Welcome to Lickyeat</p>
           <h2 className="mt-1.5 font-display text-2xl font-extrabold leading-tight">
             Sign up &amp; get 50% off your first order
           </h2>
-          <p className="mt-1.5 text-sm text-brand-ink/80">
+          <p className="mt-1.5 text-sm text-brand-ink/85">
             Use code <span className="font-bold">WELCOME50</span> at checkout — 50% off, up to ₹100.
-            One login for The Blenders Club, The Alchemy Tails and GG Tiffin.
           </p>
         </div>
 
