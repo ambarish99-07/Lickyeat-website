@@ -8,6 +8,7 @@ import { AppBanner } from "@/components/AppBanner";
 import { SignupPrompt } from "@/components/SignupPrompt";
 import { ActiveOrderPills } from "@/components/ActiveOrderPills";
 import { ToastHost } from "@/components/ToastHost";
+import { CallbackButton } from "@/components/CallbackButton";
 
 export const metadata: Metadata = {
   metadataBase: new URL("http://localhost:3100"),
@@ -40,6 +41,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <main className="flex-1">{children}</main>
           <ActiveOrderPills />
           <ToastHost />
+          <CallbackButton />
           <SignupPrompt />
           <SiteFooter />
         </Providers>

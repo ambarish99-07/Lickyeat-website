@@ -1,8 +1,10 @@
 import type {
+  AdminAlert,
   BlogPost,
   Brand,
   Combo,
   Coupon,
+  Lead,
   MenuAddOnPrice,
   MenuItem,
   Order,
@@ -96,4 +98,22 @@ export interface BlogListResponse {
 }
 export interface BlogPostResponse {
   post: BlogPost;
+}
+export interface ContactResponse {
+  whatsappNumber: string | null;
+  supportEmail: string | null;
+}
+export interface CreateLeadResponse {
+  lead: Lead;
+  brief?: string;
+}
+export interface LeadsResponse {
+  leads: Lead[];
+}
+export interface AlertsResponse {
+  alerts: AdminAlert[];
+}
+export interface AlertCountResponse {
+  total: number;
+  callbacks: number;
 }

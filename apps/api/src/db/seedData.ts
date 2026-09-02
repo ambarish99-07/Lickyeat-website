@@ -9,6 +9,8 @@ import { StoreSettingsModel } from "./models/StoreSettings.model.js";
 import { TiffinPlanModel } from "./models/TiffinPlan.model.js";
 import { UserModel } from "./models/User.model.js";
 import { BlogModel } from "./models/Blog.model.js";
+import { LeadModel } from "./models/Lead.model.js";
+import { AdminAlertModel } from "./models/AdminAlert.model.js";
 import { brandHeroUrl, brandLogoUrl, menuImageUrl, tiffinImageUrl } from "../lib/assets.js";
 
 const BLOG_POSTS = [
@@ -236,6 +238,8 @@ export async function runSeed(opts: { wipe?: boolean } = {}) {
       StoreSettingsModel.deleteMany({}),
       TiffinPlanModel.deleteMany({}),
       BlogModel.deleteMany({}),
+      LeadModel.deleteMany({}),
+      AdminAlertModel.deleteMany({}),
     ]);
   }
 
@@ -415,6 +419,81 @@ export async function runSeed(opts: { wipe?: boolean } = {}) {
       readMinutes: estimateReadMinutes(p.body),
       status: "published",
       publishedAt: new Date(base - i * 2 * 86_400_000),
+    })),
+  );
+
+  // --------------------------------------------------------------- leads ----
+  await LeadModel.deleteMany({});
+  await AdminAlertModel.deleteMany({});
+  const seededLeads = await LeadModel.create([
+    {
+      kind: "franchise",
+      name: "Rohit Anand",
+      whatsapp: "9876543210",
+      email: "rohit.anand@example.com",
+      city: "Ranchi",
+      message: "Interested in bringing the shake bar to Ranchi. Have a 300 sq ft shop near a college.",
+      callbackRequested: true,
+      callbackRequestedAt: new Date(base - 3 * 3_600_000),
+      source: "web:franchise",
+      details: {
+        scope: "single-brand",
+        brandId: "tbc",
+        hasSpace: true,
+        investmentBand: "₹15–30 lakh",
+        timeframe: "Within 3 months",
+        currentOccupation: "Runs a stationery distribution business",
+      },
+    },
+    {
+      kind: "franchise",
+      name: "Meghna Verma",
+      whatsapp: "9812345678",
+      city: "Gaya",
+      message: "Want the full Lickyeat for Gaya — family owns a commercial building on the main road.",
+      callbackRequested: false,
+      source: "web:franchise",
+      details: { scope: "full-lickyeat", hasSpace: true, investmentBand: "₹50 lakh–1 crore", timeframe: "3–6 months" },
+    },
+    {
+      kind: "catering",
+      name: "Priya Sinha",
+      whatsapp: "9900112233",
+      email: "priya@example.com",
+      city: "Patna",
+      message: "Office annual day, want a live shake counter for the evening.",
+      callbackRequested: true,
+      callbackRequestedAt: new Date(base - 30 * 3_600_000),
+      source: "web:catering",
+      details: {
+        eventType: "corporate",
+        eventDate: new Date(base + 20 * 86_400_000).toISOString().slice(0, 10),
+        guestCount: 150,
+        brands: ["tbc", "alchemy-tails"],
+        venue: "Maurya Lok",
+      },
+    },
+    {
+      kind: "callback",
+      name: "Aakash Kumar",
+      whatsapp: "9765432100",
+      city: "Muzaffarpur",
+      callbackRequested: true,
+      callbackRequestedAt: new Date(base - 1 * 3_600_000),
+      source: "web:callback",
+      details: { topic: "franchise" },
+    },
+  ]);
+
+  await AdminAlertModel.create(
+    seededLeads.map((l) => ({
+      type: l.callbackRequested ? "lead.callback" : "lead.new",
+      priority: l.callbackRequested ? "high" : "normal",
+      title: `${l.kind === "callback" ? "Call-back request" : l.kind === "franchise" ? "Franchise enquiry" : "Catering enquiry"} — ${l.name}`,
+      body: `${l.name} · ${l.whatsapp} · ${l.city}`,
+      leadId: l._id,
+      href: "/admin/leads",
+      read: false,
     })),
   );
 }

@@ -7,6 +7,7 @@ import { useCart } from "@/state/cartStore";
 import { cn } from "@/components/ui/misc";
 import { BagIcon, UserIcon } from "@/components/ui/icons";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { AlertBell } from "@/components/admin/AlertBell";
 
 export function SiteHeader() {
   const { user, ready, logout } = useAuth();
@@ -27,6 +28,8 @@ export function SiteHeader() {
         <nav className="hidden items-center gap-1 text-sm font-medium md:flex">
           <NavLink href="/#brands" label="Brands" />
           <NavLink href="/tiffin" label="GG Tiffin" />
+          <NavLink href="/catering" label="Catering" />
+          <NavLink href="/franchise" label="Franchise" />
           <NavLink href="/blog" label="Blog" />
           <NavLink href="/premium" label="Premium" />
           <NavLink href="/app" label="Get the app" />
@@ -103,6 +106,7 @@ function AdminHeader() {
           Lickyeat <span className="text-cream/50">Admin</span>
         </Link>
         <div className="flex items-center gap-3 text-sm">
+          <AlertBell />
           <ThemeToggle className="grid h-8 w-8 place-items-center rounded-full border border-cream/20 text-cream/80 hover:text-cream" />
           <Link href="/" className="text-cream/70 hover:text-cream">
             View site

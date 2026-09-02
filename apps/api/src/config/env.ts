@@ -31,4 +31,19 @@ export const env = {
       return Boolean(this.token && this.phoneId);
     },
   },
+  /** Public-facing Lickyeat WhatsApp number for wa.me deep links + the ops fallback alert. */
+  contact: {
+    /** digits only, country code included, e.g. 919000000000 */
+    whatsappNumber: optional("LICKYEAT_WHATSAPP_NUMBER"),
+    supportEmail: optional("LICKYEAT_SUPPORT_EMAIL"),
+  },
+  /** Where new-lead / callback alerts go when the admin panel is offline. */
+  opsNotify: {
+    email: optional("OPS_NOTIFY_EMAIL"),
+    whatsappNumber: optional("OPS_NOTIFY_WHATSAPP"),
+    /** generic webhook (Zapier / Make / n8n / Slack incoming-webhook). */
+    webhookUrl: optional("OPS_NOTIFY_WEBHOOK_URL"),
+    /** Resend HTTP API key — the no-SMTP way to actually send the email. */
+    resendApiKey: optional("RESEND_API_KEY"),
+  },
 };

@@ -3,7 +3,7 @@ import Link from "next/link";
 export function SiteFooter() {
   return (
     <footer className="mt-24 border-t border-line bg-sand/60">
-      <div className="container-page grid gap-8 py-12 sm:grid-cols-2 lg:grid-cols-[1.6fr_1fr_1fr_1fr]">
+      <div className="container-page grid gap-8 py-12 sm:grid-cols-2 lg:grid-cols-[1.6fr_1fr_1fr_1fr_1fr]">
         <div>
           <p className="font-display text-lg font-extrabold">Lickyeat</p>
           <p className="mt-2 max-w-xs text-sm text-muted">
@@ -39,6 +39,13 @@ export function SiteFooter() {
             <li><Link href="/app" className="hover:text-brand">Get the app</Link></li>
             <li><Link href="/blog" className="hover:text-brand">Blog</Link></li>
             <li><Link href="/#brands" className="hover:text-brand">All kitchens</Link></li>
+          </ul>
+        </nav>
+        <nav className="text-sm">
+          <p className="eyebrow mb-3">Partner with us</p>
+          <ul className="space-y-2 text-charcoal">
+            <li><Link href="/franchise" className="hover:text-brand">Franchise</Link></li>
+            <li><Link href="/catering" className="hover:text-brand">Catering &amp; events</Link></li>
           </ul>
         </nav>
       </div>

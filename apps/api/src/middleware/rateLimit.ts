@@ -22,3 +22,15 @@ export const loginRateLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: { code: "rate_limited", message: "Too many attempts, try again later." } },
 });
+
+/** 6 enquiry submissions / hour per IP. */
+export const leadRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 6,
+  skip: () => disabled,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: { code: "rate_limited", message: "You've sent a few requests already — we'll be in touch soon." },
+  },
+});

@@ -182,7 +182,11 @@ maths is in `resolveCouponDiscount` (shared-types) — callers pass `pricingLine
 | Premium Membership | `app/premium/`, `app/account/` | `/premium-membership/{status,purchase,verify}` |
 | Account (profile, addresses, loyalty) | `app/account/` | `/account/{profile,addresses,recommendations}` |
 | Store status banners | `components/StoreClosedBanner` (accepts a server-fetched `status` prop) | `/brands/:brandId/status`, `/store-settings/*` |
-| Admin (dashboard, orders, catalog, coupons, store, tiffin) | `app/admin/*` | `/admin/*`, `/orders/admin/*`, `/tiffin/admin/*` |
+| Admin (dashboard, orders, catalog, coupons, store, tiffin, blog, leads) | `app/admin/*` | `/admin/*`, `/orders/admin/*`, `/tiffin/admin/*`, `/blog/*`, `/leads/*` |
+| Blog (daily posts, SSR + admin CRUD) | `app/blog/*`, `components/blog/*` | `GET /blog`, `/blog/:slug`, admin `/blog` CRUD |
+| Franchise & Catering (SSR pitch + enquiry forms) | `app/franchise/`, `app/catering/`, `components/leads/{FranchiseEnquiryForm,CateringEnquiryForm,LeadSuccess,CallbackModal}` | `POST /leads` (public, honeypot + rate-limited), `GET /leads/contact` |
+| Call-back button (floating, site-wide) | `components/CallbackButton` (root layout; hidden on admin/cart/checkout/auth) | `POST /leads` `kind:"callback"` |
+| Lead pipeline + durable alert queue | `app/admin/leads/`, `components/admin/AlertBell` (in `AdminHeader`) | `GET/PATCH /leads`, `/leads/alerts/{list,count,read}` |
 
 Advancing a regular order to `out-for-delivery` (admin only) is the **only** way to assign a
 delivery partner and reach the tracking screen's delivery state.
@@ -209,7 +213,8 @@ seeds itself on boot when the DB is empty — the simplest local setup. Or point
 `MONGODB_URI`.
 
 Tests: `pnpm -r test` — `packages/pricing` (19 unit), `packages/shared-types` (8), `apps/api`
-(auth / order flow / menu-availability integration, mongodb-memory-server). No web component tests.
+(auth / order flow / menu-availability / coupons / leads integration, mongodb-memory-server). No
+web component tests.
 
 If dev shows `SegmentViewNode` / `__webpack_modules__ is not a function` errors, delete
 `apps/web/.next` and restart — that's stale build cache from alternating `next build` / `next dev`.
@@ -220,6 +225,12 @@ If dev shows `SegmentViewNode` / `__webpack_modules__ is not a function` errors,
 
 - No real geocoding, no real rider dispatch (fixed demo partner pool), refunds recorded but never
   pushed through Razorpay, WhatsApp fail-silent with placeholder messages.
+- Franchise/catering leads: automated **outbound** WhatsApp (the enquirer's brief) needs Meta
+  WhatsApp Business API creds + an approved template — the adapter (`modules/leads/notify.ts`) is
+  written but dormant. Until then the web shows the brief on-screen + a `wa.me` deep link
+  (`LICKYEAT_WHATSAPP_NUMBER`). Ops alerts fan out to email (Resend) / WhatsApp / webhook when
+  configured; the durable `AdminAlert` queue (bell in admin header) always works. No telephony —
+  "call back within 24h" is an SLA surfaced in `/admin/leads`, not an automated dialer.
 - Menu-item / hero photography: `imageUrl` / `heroImageUrl` are supported and rendered when set,
   but the seed only ships brand **logo** SVGs (`/static/brands/*.svg`). Item cards and brand heroes
   fall back to typography + brand-colour compositions until real photos are supplied.
