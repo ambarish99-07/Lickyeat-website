@@ -10,7 +10,7 @@ export default function AdminCoupons() {
   const { data, mutate } = useSWR<{ coupons: Coupon[] }>("/coupons");
   const [form, setForm] = useState({
     code: "",
-    kind: "percent" as "percent" | "flat",
+    kind: "percent" as "percent" | "flat" | "bogo",
     value: 10,
     maxDiscount: 0,
     minOrderAmount: 0,
@@ -51,17 +51,20 @@ export default function AdminCoupons() {
         <select
           className="input !w-28"
           value={form.kind}
-          onChange={(e) => setForm({ ...form, kind: e.target.value as "percent" | "flat" })}
+          onChange={(e) => setForm({ ...form, kind: e.target.value as "percent" | "flat" | "bogo" })}
         >
           <option value="percent">percent</option>
           <option value="flat">flat ₹</option>
+          <option value="bogo">BOGO</option>
         </select>
-        <input
-          type="number"
-          className="input !w-20"
-          value={form.value}
-          onChange={(e) => setForm({ ...form, value: Number(e.target.value) })}
-        />
+        {form.kind !== "bogo" && (
+          <input
+            type="number"
+            className="input !w-20"
+            value={form.value}
+            onChange={(e) => setForm({ ...form, value: Number(e.target.value) })}
+          />
+        )}
         {form.kind === "percent" && (
           <input
             type="number"

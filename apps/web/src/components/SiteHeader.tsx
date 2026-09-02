@@ -26,6 +26,7 @@ export function SiteHeader() {
         <nav className="hidden items-center gap-1 text-sm font-medium md:flex">
           <NavLink href="/#brands" label="Brands" />
           <NavLink href="/tiffin" label="GG Tiffin" />
+          <NavLink href="/blog" label="Blog" />
           <NavLink href="/premium" label="Premium" />
           <NavLink href="/app" label="Get the app" />
           {user && <NavLink href="/orders" label="My orders" />}
@@ -35,16 +36,14 @@ export function SiteHeader() {
         <div className="flex items-center gap-1.5 sm:gap-2">
           {ready && user ? (
             <>
+              {/* logged in → account is an icon */}
               <Link
                 href="/account"
-                aria-label="Account"
+                aria-label={`Account — ${user.name}`}
                 title={user.name}
-                className="flex items-center gap-1.5 rounded-full border border-ink/15 bg-white/60 py-1.5 pl-1.5 pr-3 text-sm font-semibold hover:border-ink/30 hover:bg-white"
+                className="grid h-9 w-9 place-items-center rounded-full border border-ink/15 bg-white/60 text-ink transition hover:border-ink/30 hover:bg-white"
               >
-                <span className="grid h-6 w-6 place-items-center rounded-full bg-brand text-brand-ink">
-                  <UserIcon className="h-3.5 w-3.5" />
-                </span>
-                <span className="hidden sm:inline">{user.name.split(" ")[0]}</span>
+                <UserIcon className="h-4 w-4" />
               </Link>
               <button
                 onClick={logout}
@@ -54,23 +53,18 @@ export function SiteHeader() {
               </button>
             </>
           ) : (
-            <Link
-              href="/login"
-              aria-label="Log in"
-              className="flex items-center gap-1.5 rounded-full border border-ink/15 bg-white/60 px-3 py-1.5 text-sm font-semibold hover:border-ink/30 hover:bg-white"
-            >
-              <UserIcon className="h-4 w-4" />
-              <span className="hidden sm:inline">Log in</span>
+            <Link href="/login" className="btn-ghost btn-sm">
+              Log in
             </Link>
           )}
 
+          {/* cart is always an icon */}
           <Link
             href="/cart"
-            aria-label={`Cart${count > 0 ? `, ${count} items` : ""}`}
-            className="relative flex items-center gap-1.5 rounded-full bg-ink px-3 py-1.5 text-sm font-semibold text-cream hover:bg-charcoal"
+            aria-label={count > 0 ? `Cart, ${count} item${count > 1 ? "s" : ""}` : "Cart"}
+            className="relative grid h-9 w-9 place-items-center rounded-full bg-ink text-cream transition hover:bg-charcoal"
           >
             <BagIcon className="h-4 w-4" />
-            <span className="hidden sm:inline">Cart</span>
             {count > 0 && (
               <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-brand px-1 text-[11px] font-bold text-brand-ink">
                 {count}

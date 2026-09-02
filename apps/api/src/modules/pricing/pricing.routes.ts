@@ -35,6 +35,7 @@ pricingRouter.post(
           subtotal: subtotalForCoupon,
           brandId: cart.brandId,
           userId: req.user?.id ?? null,
+          pricingLines: cart.pricingLines,
         })
       : { discountAmount: 0, code: null as string | null, message: "" };
 

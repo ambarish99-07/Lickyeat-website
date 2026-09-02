@@ -1,4 +1,5 @@
 import type {
+  BlogPost,
   Brand,
   Combo,
   Coupon,
@@ -89,4 +90,10 @@ export interface MeResponse {
 }
 export interface CouponsResponse {
   coupons: Coupon[];
+}
+export interface BlogListResponse {
+  posts: BlogPost[];
+}
+export interface BlogPostResponse {
+  post: BlogPost;
 }

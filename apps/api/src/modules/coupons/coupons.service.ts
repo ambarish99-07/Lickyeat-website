@@ -1,4 +1,4 @@
-import type { CreateCouponRequest } from "@lickyeat/shared-types";
+import type { CouponLine, CreateCouponRequest, PricingCartLine } from "@lickyeat/shared-types";
 import { couponSummary, resolveCouponDiscount } from "@lickyeat/shared-types";
 import { CouponModel } from "../../db/models/Coupon.model.js";
 import { OrderModel } from "../../db/models/Order.model.js";
@@ -17,9 +17,24 @@ export interface ResolvedCoupon {
  * order-creation path treats a hard failure as fatal (see throwOnInvalid).
  * `userId` enables the once-per-customer check.
  */
+function toCouponLines(lines: PricingCartLine[]): CouponLine[] {
+  return lines.map((l) => ({
+    unitPrice:
+      (l.salePercent > 0 ? Math.round(l.unitBasePrice * (1 - l.salePercent / 100)) : l.unitBasePrice) +
+      l.unitAddOnsPrice,
+    quantity: l.quantity,
+    isCombo: l.isCombo,
+  }));
+}
+
 export async function resolveCouponForCart(
   code: string,
-  ctx: { subtotal: number; brandId: string; userId?: string | null },
+  ctx: {
+    subtotal: number;
+    brandId: string;
+    userId?: string | null;
+    pricingLines?: PricingCartLine[];
+  },
   opts: { throwOnInvalid?: boolean } = {},
 ): Promise<ResolvedCoupon> {
   const coupon = await CouponModel.findOne({ code: code.toUpperCase() }).lean();
@@ -38,7 +53,7 @@ export async function resolveCouponForCart(
       expiresAt: coupon.expiresAt ? coupon.expiresAt.toISOString() : null,
       isActive: coupon.isActive ?? true,
     },
-    ctx,
+    { ...ctx, lines: ctx.pricingLines ? toCouponLines(ctx.pricingLines) : [] },
   );
 
   if (!result.ok) {

@@ -44,7 +44,12 @@ export async function createOrder(input: CreateOrderRequest, user: AuthedUser | 
   const coupon = input.couponCode
     ? await resolveCouponForCart(
         input.couponCode,
-        { subtotal: rawSubtotal, brandId: cart.brandId, userId: user?.id ?? null },
+        {
+          subtotal: rawSubtotal,
+          brandId: cart.brandId,
+          userId: user?.id ?? null,
+          pricingLines: cart.pricingLines,
+        },
         { throwOnInvalid: true },
       )
     : { discountAmount: 0, code: null as string | null, message: "" };

@@ -1,14 +1,14 @@
 import { z } from "zod";
-import { BrandIdSchema, ObjectIdSchema, PercentSchema, RupeesSchema } from "./common.js";
+import { BrandIdSchema, ObjectIdSchema, RupeesSchema } from "./common.js";
 
-export const CouponKindSchema = z.enum(["percent", "flat"]);
+export const CouponKindSchema = z.enum(["percent", "flat", "bogo"]);
 export type CouponKind = z.infer<typeof CouponKindSchema>;
 
 export const CouponSchema = z.object({
   id: ObjectIdSchema,
   code: z.string().min(3).max(32).toUpperCase(),
   kind: CouponKindSchema,
-  /** percent: 0..100. flat: rupee amount. */
+  /** percent: 0..100. flat: rupee amount. bogo: unused (0). */
   value: z.number().nonnegative(),
   /** cap on the discount for percent coupons; null = uncapped. */
   maxDiscount: RupeesSchema.nullable().default(null),
@@ -28,10 +28,11 @@ export type Coupon = z.infer<typeof CouponSchema>;
 export function couponSummary(
   c: Pick<Coupon, "kind" | "value" | "maxDiscount" | "minOrderAmount">,
 ): string {
-  const off =
-    c.kind === "percent"
-      ? `${c.value}% off${c.maxDiscount ? ` (up to ₹${c.maxDiscount})` : ""}`
-      : `₹${c.value} off`;
+  let off: string;
+  if (c.kind === "bogo") off = "Buy 1 Get 1 — the cheapest eligible drink is free";
+  else if (c.kind === "percent")
+    off = `${c.value}% off${c.maxDiscount ? ` (up to ₹${c.maxDiscount})` : ""}`;
+  else off = `₹${c.value} off`;
   return c.minOrderAmount > 0 ? `${off} on orders over ₹${c.minOrderAmount}` : off;
 }
 
@@ -40,6 +41,7 @@ export const CreateCouponRequestSchema = CouponSchema.omit({
   createdAt: true,
   updatedAt: true,
 }).partial({
+  value: true,
   maxDiscount: true,
   minOrderAmount: true,
   brandId: true,
@@ -62,10 +64,31 @@ export const ApplyCouponResponseSchema = z.object({
 });
 export type ApplyCouponResponse = z.infer<typeof ApplyCouponResponseSchema>;
 
-/** Resolve a coupon against a subtotal + brand. Pure, reused by API + tests. */
+export interface CouponLine {
+  /** effective per-unit price (sale applied, add-ons included). */
+  unitPrice: number;
+  quantity: number;
+  isCombo: boolean;
+}
+
+/** Buy-1-get-1: the cheapest single non-combo unit in the cart, given ≥ 2 eligible units. */
+function cheapestEligibleUnitPrice(lines: CouponLine[]): number | null {
+  const units: number[] = [];
+  for (const l of lines) {
+    if (l.isCombo) continue;
+    for (let i = 0; i < l.quantity; i++) units.push(l.unitPrice);
+  }
+  if (units.length < 2) return null;
+  return Math.min(...units);
+}
+
+/** Resolve a coupon against a cart. Pure — no DB, no user/expiry-outside checks beyond what's passed. */
 export function resolveCouponDiscount(
-  coupon: Pick<Coupon, "kind" | "value" | "maxDiscount" | "minOrderAmount" | "brandId" | "expiresAt" | "isActive">,
-  ctx: { subtotal: number; brandId: string; now?: Date },
+  coupon: Pick<
+    Coupon,
+    "kind" | "value" | "maxDiscount" | "minOrderAmount" | "brandId" | "expiresAt" | "isActive"
+  >,
+  ctx: { subtotal: number; brandId: string; lines?: CouponLine[]; now?: Date },
 ): { ok: true; discountAmount: number } | { ok: false; reason: string } {
   const now = ctx.now ?? new Date();
   if (!coupon.isActive) return { ok: false, reason: "This coupon is no longer active." };
@@ -78,6 +101,13 @@ export function resolveCouponDiscount(
       ok: false,
       reason: `Add ₹${coupon.minOrderAmount - ctx.subtotal} more to use this coupon.`,
     };
+
+  if (coupon.kind === "bogo") {
+    const free = cheapestEligibleUnitPrice(ctx.lines ?? []);
+    if (free == null)
+      return { ok: false, reason: "Add 2 or more items (no combos) to use this Buy 1 Get 1 offer." };
+    return { ok: true, discountAmount: Math.min(Math.round(free), ctx.subtotal) };
+  }
 
   let discount =
     coupon.kind === "percent"

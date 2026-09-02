@@ -4,6 +4,8 @@ import { serverGet } from "@/lib/serverApi";
 import type { BrandsResponse } from "@/lib/apiTypes";
 import { BrandShowcaseCard } from "@/components/BrandShowcaseCard";
 import { HomeRecommendations } from "@/components/HomeRecommendations";
+import { SignupPerks } from "@/components/SignupPerks";
+import { BlogStrip } from "@/components/blog/BlogStrip";
 
 export const metadata: Metadata = {
   description:
@@ -85,6 +87,10 @@ export default async function HomePage() {
       </section>
 
       <HomeRecommendations />
+
+      <SignupPerks />
+
+      <BlogStrip />
 
       {/* How it works */}
       <section className="border-y border-line bg-sand/40">

@@ -155,11 +155,13 @@ else ₹39. Tax 5% on `subtotal − discount − reward − coupon`. Per-item `s
 of the above. Combos: 15% off constituents' current base prices (`computeComboPrice`, or a combo's
 own `discountPercent`), and combo subtotal is excluded from the quantity-tier base.
 
-**Coupons** (real codes): `WELCOME50` = 50% off up to ₹100, **once per customer**; `FLAT50…FLAT400`
-= flat ₹ off above a minimum. `Coupon.oncePerCustomer` is enforced in `resolveCouponForCart` (via
-`ctx.userId` — checks `Order.pricing.couponCode` on the customer's non-cancelled orders). Public
+**Coupons** (`Coupon.kind`): `percent` (`WELCOME50` = 50% off ≤₹100), `flat` (`FLAT50…FLAT400`),
+`bogo` (`BOGO1` — cheapest eligible non-combo unit free, needs ≥2 units). `WELCOME50` and `BOGO1`
+are `oncePerCustomer`, enforced in `resolveCouponForCart` via `ctx.userId` against a top-level
+indexed `Order.couponCode` field (NOT the Mixed `pricing` blob — that isn't queryable). The bogo
+maths is in `resolveCouponDiscount` (shared-types) — callers pass `pricingLines`. Public
 `GET /coupons/available` powers the cart's "Offers for you" list (`components/OffersList.tsx`);
-`couponSummary()` in shared-types is the display-string helper.
+`couponSummary()` is the display-string helper.
 
 ---
 

@@ -17,6 +17,7 @@ import { premiumMembershipRouter } from "./modules/premiumMembership/premiumMemb
 import { storeSettingsRouter } from "./modules/storeSettings/storeSettings.routes.js";
 import { accountRouter } from "./modules/account/account.routes.js";
 import { adminRouter } from "./modules/admin/admin.routes.js";
+import { blogRouter } from "./modules/blog/blog.routes.js";
 
 export function createApp(): Express {
   const app = express();
@@ -54,6 +55,7 @@ export function createApp(): Express {
   app.use("/store-settings", storeSettingsRouter);
   app.use("/account", accountRouter);
   app.use("/admin", adminRouter);
+  app.use("/blog", blogRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

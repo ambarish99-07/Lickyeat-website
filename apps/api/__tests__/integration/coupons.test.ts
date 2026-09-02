@@ -28,9 +28,19 @@ async function seed() {
     price: 300,
     isAvailable: true,
   });
+  await MenuItemModel.create({
+    _id: "juice",
+    brandId: "tbc",
+    signatureName: "Juice",
+    commonName: "A Juice",
+    category: "signature-shakes",
+    price: 120,
+    isAvailable: true,
+  });
   await CouponModel.create([
     { code: "WELCOME50", kind: "percent", value: 50, maxDiscount: 100, minOrderAmount: 0, oncePerCustomer: true, isActive: true },
     { code: "FLAT50", kind: "flat", value: 50, minOrderAmount: 200, isActive: true },
+    { code: "BOGO1", kind: "bogo", value: 0, minOrderAmount: 0, oncePerCustomer: true, isActive: true },
   ]);
 }
 
@@ -83,5 +93,30 @@ describe("coupons", () => {
       .send({ lines: [line], address: patnaAddress, paymentMethod: "cod", couponCode: "FLAT50" });
     expect(f1.status).toBe(201);
     expect(f2.status).toBe(201);
+  });
+
+  it("BOGO1 discounts the cheapest eligible unit and needs 2+ items", async () => {
+    await seed();
+    // one ₹300 shake + one ₹120 juice → cheapest unit (₹120) comes off
+    const preview = await request(app)
+      .post("/pricing/preview")
+      .send({
+        lines: [
+          { lineId: "l1", brandId: "tbc", kind: "item", refId: "shake", quantity: 1 },
+          { lineId: "l2", brandId: "tbc", kind: "item", refId: "juice", quantity: 1 },
+        ],
+        couponCode: "BOGO1",
+      });
+    expect(preview.status).toBe(200);
+    expect(preview.body.pricing.couponDiscount).toBe(120);
+
+    // a single item → nothing to "get free"
+    const single = await request(app)
+      .post("/pricing/preview")
+      .send({
+        lines: [{ lineId: "l1", brandId: "tbc", kind: "item", refId: "shake", quantity: 1 }],
+        couponCode: "BOGO1",
+      });
+    expect(single.body.pricing.couponDiscount).toBe(0);
   });
 });

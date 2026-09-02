@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import { TIFFIN_PLAN_DAYS } from "@lickyeat/shared-types";
+import { estimateReadMinutes, TIFFIN_PLAN_DAYS } from "@lickyeat/shared-types";
 import { BrandModel } from "./models/Brand.model.js";
 import { MenuAddOnModel } from "./models/MenuAddOn.model.js";
 import { MenuItemModel } from "./models/MenuItem.model.js";
@@ -8,7 +8,96 @@ import { CouponModel } from "./models/Coupon.model.js";
 import { StoreSettingsModel } from "./models/StoreSettings.model.js";
 import { TiffinPlanModel } from "./models/TiffinPlan.model.js";
 import { UserModel } from "./models/User.model.js";
+import { BlogModel } from "./models/Blog.model.js";
 import { brandHeroUrl, brandLogoUrl, menuImageUrl, tiffinImageUrl } from "../lib/assets.js";
+
+const BLOG_POSTS = [
+  {
+    _id: "how-we-build-a-thick-shake",
+    title: "How we build a thick shake that actually holds a spoon",
+    excerpt:
+      "No syrups pretending to be flavour. Here's what goes into a Choco Crush, from the ice cream base to the final pour.",
+    tags: ["The Blenders Club", "behind the counter"],
+    cover: menuImageUrl("choco-crush"),
+    body: `A thick shake is only as good as its base, and ours starts with real dairy ice cream — never a powder.
+
+## The three things that matter
+
+- **Temperature.** Everything goes in cold. A warm blender jar means a thin shake, every time.
+- **Order of operations.** Ice cream first, milk second, flavour last. Fruit or cocoa added too early just gets whipped into foam.
+- **Blend time.** Fifteen seconds, not thirty. Over-blending melts the whole thing.
+
+## Why Choco Crush is our most reordered drink
+
+It's the simplest one on the menu: dark chocolate ice cream, cocoa, a brownie chunk, and a chocolate wafer on top. Nothing to hide behind — which is exactly why people keep coming back to it.
+
+Order it once and you'll see what we mean.`,
+  },
+  {
+    _id: "zero-proof-is-not-boring",
+    title: "Zero-proof is not boring: the case for a proper mocktail",
+    excerpt:
+      "Clarified juices, smoked garnishes, house cordials. The Alchemy Tails treats an alcohol-free drink like a bartender would.",
+    tags: ["The Alchemy Tails", "menu"],
+    cover: menuImageUrl("rainbow-fizz"),
+    body: `For years a "mocktail" meant sugar, soda, and a sad orange slice. We think that's a wasted opportunity.
+
+## What we actually do
+
+A drink like the **Smoked Blue Lagoon** gets a rosemary sprig lit at the pass so the glass fills with smoke before it reaches you. The **Clarified Guava & Chilli** is milk-washed so the guava goes crystal clear and silky.
+
+None of this is about pretending there's alcohol. It's about building a drink with the same care — layers, balance, a finish.
+
+## Where to start
+
+If you've never had one of ours, get the **Rainbow Fizz** to share. It's the most fun to watch being made, and it's the one that converts people.`,
+  },
+  {
+    _id: "what-a-week-of-gg-tiffin-looks-like",
+    title: "What a week of GG Tiffin actually looks like",
+    excerpt:
+      "A real rotating menu — Aloo Matar on Monday, Rajma on Friday, Dum Aloo on Sunday. Not the same dal every day.",
+    tags: ["GG Tiffin", "subscriptions"],
+    cover: tiffinImageUrl("rajma"),
+    body: `The most common question we get about GG Tiffin: "is it the same food every day?"
+
+No. Here's a real Regular-tier veg week for lunch:
+
+- **Monday** — Aloo Matar
+- **Tuesday** — Aloo Parwal
+- **Wednesday** — Aloo Soyabean
+- **Thursday** — Mushroom Masala
+- **Friday** — Rajma
+- **Saturday** — Aloo Gobhi
+- **Sunday** — Lauki Masala
+
+Dinner rotates separately, and non-veg days bring Fish Curry, Egg Curry and Chicken Curry into the mix.
+
+## Pause it, skip it, no charge
+
+Going home for the weekend? Pause the plan or skip individual days from your account — you're only charged for meals that go out. A closure on our side automatically extends your plan by the same number of days.`,
+  },
+  {
+    _id: "the-offers-worth-knowing",
+    title: "The Lickyeat offers worth knowing about",
+    excerpt:
+      "BOGO1 on your first order, WELCOME50 for 50% off, and a stack of flat-₹ codes. Here's how they actually work.",
+    tags: ["offers", "how it works"],
+    cover: menuImageUrl("hazelnut-heaven"),
+    body: `Every coupon on Lickyeat is validated twice — once when you apply it, and again when the order is placed — so the number you see is the number you pay.
+
+## The two sign-up offers
+
+- **BOGO1** — Buy 1 Get 1 Free on your first order. The cheapest eligible drink comes off automatically. Combos are excluded (they already carry a bundle discount).
+- **WELCOME50** — 50% off, capped at ₹100. Also once per account.
+
+## The flat-₹ codes
+
+FLAT50 through FLAT400, each with a minimum order value (₹200 up to ₹1499). These are reusable — apply whichever one your cart qualifies for.
+
+You'll see the ones you're eligible for listed right in the cart under "Offers for you".`,
+  },
+];
 
 /** Demo admin login for local dev: admin@lickyeat.com / Lickyeat@123 */
 export async function ensureDemoAdmin() {
@@ -146,6 +235,7 @@ export async function runSeed(opts: { wipe?: boolean } = {}) {
       CouponModel.deleteMany({}),
       StoreSettingsModel.deleteMany({}),
       TiffinPlanModel.deleteMany({}),
+      BlogModel.deleteMany({}),
     ]);
   }
 
@@ -260,6 +350,7 @@ export async function runSeed(opts: { wipe?: boolean } = {}) {
   // ------------------------------------------------------------- coupons ----
   await CouponModel.deleteMany({});
   await CouponModel.create([
+    { code: "BOGO1", kind: "bogo", value: 0, minOrderAmount: 0, brandId: null, oncePerCustomer: true, isActive: true },
     { code: "WELCOME50", kind: "percent", value: 50, maxDiscount: 100, minOrderAmount: 0, brandId: null, oncePerCustomer: true, isActive: true },
     { code: "FLAT50", kind: "flat", value: 50, minOrderAmount: 200, brandId: null, isActive: true },
     { code: "FLAT100", kind: "flat", value: 100, minOrderAmount: 499, brandId: null, isActive: true },
@@ -308,4 +399,22 @@ export async function runSeed(opts: { wipe?: boolean } = {}) {
     plan("Monthly Veg — All Three Meals", "veg", "thrice-daily", "monthly", 8999),
     plan("Monthly Non-Veg — All Three Meals", "non-veg", "thrice-daily", "monthly", 13999, 30),
   ]);
+
+  // --------------------------------------------------------------- blog ----
+  await BlogModel.deleteMany({});
+  const base = Date.now();
+  await BlogModel.create(
+    BLOG_POSTS.map((p, i) => ({
+      _id: p._id,
+      title: p.title,
+      excerpt: p.excerpt,
+      body: p.body,
+      coverImageUrl: p.cover,
+      author: "Team Lickyeat",
+      tags: p.tags,
+      readMinutes: estimateReadMinutes(p.body),
+      status: "published",
+      publishedAt: new Date(base - i * 2 * 86_400_000),
+    })),
+  );
 }
