@@ -71,7 +71,7 @@ export default async function HomePage() {
           runs on its own subscription flow.
         </p>
 
-        <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {brands.length === 0 && (
             <p className="text-sm text-muted">Loading kitchens…</p>
           )}

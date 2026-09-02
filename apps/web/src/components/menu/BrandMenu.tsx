@@ -83,7 +83,7 @@ export function BrandMenu({
       {combos.length > 0 && (
         <section className="mb-10">
           <h2 className="mb-4 font-display text-xl font-extrabold">Combos</h2>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {combos.map((c) => (
               <ComboCard key={c.id} combo={c} />
             ))}
@@ -101,7 +101,7 @@ export function BrandMenu({
           className="mb-10 scroll-mt-32"
         >
           <h2 className="mb-4 font-display text-xl font-extrabold">{categoryLabel(cat)}</h2>
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {items
               .filter((i) => i.category === cat)
               .map((item) => (

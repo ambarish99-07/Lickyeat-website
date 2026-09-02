@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@/state/authStore";
 import { useCart } from "@/state/cartStore";
 import { cn } from "@/components/ui/misc";
+import { BagIcon, UserIcon } from "@/components/ui/icons";
 
 export function SiteHeader() {
   const { user, ready, logout } = useAuth();
@@ -17,39 +18,61 @@ export function SiteHeader() {
     <header className="sticky top-0 z-50 border-b border-line bg-cream/85 backdrop-blur-md">
       <div className="container-page flex h-16 items-center justify-between gap-4">
         <Link href="/" className="flex items-center gap-2">
-          <span className="grid h-8 w-8 place-items-center rounded-xl bg-ink text-cream font-display text-lg font-extrabold">
-            L
-          </span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/lickyeat-mark.png" alt="" className="h-8 w-8 object-contain" />
           <span className="font-display text-lg font-extrabold tracking-tight">Lickyeat</span>
         </Link>
 
-        <nav className="hidden items-center gap-1 text-sm font-medium sm:flex">
+        <nav className="hidden items-center gap-1 text-sm font-medium md:flex">
           <NavLink href="/#brands" label="Brands" />
           <NavLink href="/tiffin" label="GG Tiffin" />
           <NavLink href="/premium" label="Premium" />
+          <NavLink href="/app" label="Get the app" />
           {user && <NavLink href="/orders" label="My orders" />}
           {user?.role === "admin" && <NavLink href="/admin" label="Admin" />}
         </nav>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           {ready && user ? (
-            <div className="hidden items-center gap-1 sm:flex">
-              <Link href="/account" className="btn-quiet btn-sm">
-                {user.name.split(" ")[0]}
+            <>
+              <Link
+                href="/account"
+                aria-label="Account"
+                title={user.name}
+                className="flex items-center gap-1.5 rounded-full border border-ink/15 bg-white/60 py-1.5 pl-1.5 pr-3 text-sm font-semibold hover:border-ink/30 hover:bg-white"
+              >
+                <span className="grid h-6 w-6 place-items-center rounded-full bg-brand text-brand-ink">
+                  <UserIcon className="h-3.5 w-3.5" />
+                </span>
+                <span className="hidden sm:inline">{user.name.split(" ")[0]}</span>
               </Link>
-              <button onClick={logout} className="btn-quiet btn-sm">
+              <button
+                onClick={logout}
+                className="hidden rounded-full px-2.5 py-1.5 text-sm font-medium text-muted hover:text-ink sm:inline"
+              >
                 Log out
               </button>
-            </div>
+            </>
           ) : (
-            <Link href="/login" className="btn-ghost btn-sm hidden sm:inline-flex">
-              Log in
+            <Link
+              href="/login"
+              aria-label="Log in"
+              className="flex items-center gap-1.5 rounded-full border border-ink/15 bg-white/60 px-3 py-1.5 text-sm font-semibold hover:border-ink/30 hover:bg-white"
+            >
+              <UserIcon className="h-4 w-4" />
+              <span className="hidden sm:inline">Log in</span>
             </Link>
           )}
-          <Link href="/cart" className="btn-dark btn-sm">
-            Cart
+
+          <Link
+            href="/cart"
+            aria-label={`Cart${count > 0 ? `, ${count} items` : ""}`}
+            className="relative flex items-center gap-1.5 rounded-full bg-ink px-3 py-1.5 text-sm font-semibold text-cream hover:bg-charcoal"
+          >
+            <BagIcon className="h-4 w-4" />
+            <span className="hidden sm:inline">Cart</span>
             {count > 0 && (
-              <span className="ml-1 grid h-5 min-w-5 place-items-center rounded-full bg-cream px-1 text-[11px] font-bold text-ink">
+              <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-brand px-1 text-[11px] font-bold text-brand-ink">
                 {count}
               </span>
             )}
@@ -66,10 +89,7 @@ function NavLink({ href, label }: { href: string; label: string }) {
   return (
     <Link
       href={href}
-      className={cn(
-        "rounded-full px-3 py-1.5 transition hover:bg-ink/5",
-        active && "text-brand",
-      )}
+      className={cn("rounded-full px-3 py-1.5 transition hover:bg-ink/5", active && "text-brand")}
     >
       {label}
     </Link>
@@ -81,7 +101,9 @@ function AdminHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-line bg-ink text-cream">
       <div className="container-page flex h-14 items-center justify-between">
-        <Link href="/admin" className="font-display font-extrabold">
+        <Link href="/admin" className="flex items-center gap-2 font-display font-extrabold">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/lickyeat-mark.png" alt="" className="h-6 w-6 object-contain" />
           Lickyeat <span className="text-cream/50">Admin</span>
         </Link>
         <div className="flex items-center gap-3 text-sm">

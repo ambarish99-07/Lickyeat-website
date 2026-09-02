@@ -4,6 +4,8 @@ import { display, sans } from "@/lib/fonts";
 import { Providers } from "./providers";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
+import { AppBanner } from "@/components/AppBanner";
+import { SignupPrompt } from "@/components/SignupPrompt";
 import { ActiveOrderPills } from "@/components/ActiveOrderPills";
 import { ToastHost } from "@/components/ToastHost";
 
@@ -27,10 +29,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${display.variable} ${sans.variable}`}>
       <body className="flex min-h-screen flex-col font-sans">
         <Providers>
+          <AppBanner />
           <SiteHeader />
           <main className="flex-1">{children}</main>
           <ActiveOrderPills />
           <ToastHost />
+          <SignupPrompt />
           <SiteFooter />
         </Providers>
       </body>

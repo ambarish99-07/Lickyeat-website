@@ -1,0 +1,151 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import type { AuthResponse } from "@lickyeat/shared-types";
+import { api, ApiError } from "@/lib/api";
+import { useAuth } from "@/state/authStore";
+import { CloseIcon } from "@/components/ui/icons";
+
+const KEY = "lky_signup_prompt_seen";
+const HIDE_ON = ["/login", "/signup", "/admin", "/checkout"];
+
+export function SignupPrompt() {
+  const pathname = usePathname();
+  const { user, ready, setSession } = useAuth();
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ name: "", contact: "", password: "" });
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!ready) return;
+    let seen = true;
+    try {
+      seen = window.localStorage.getItem(KEY) === "1";
+    } catch {
+      seen = false;
+    }
+    if (seen || user || HIDE_ON.some((p) => pathname.startsWith(p))) return;
+    const t = setTimeout(() => setOpen(true), 1100);
+    return () => clearTimeout(t);
+  }, [ready, user, pathname]);
+
+  function dismiss() {
+    try {
+      window.localStorage.setItem(KEY, "1");
+    } catch {
+      /* ignore */
+    }
+    setOpen(false);
+  }
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && dismiss();
+    document.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [open]);
+
+  if (!open) return null;
+
+  const isEmail = /@/.test(form.contact);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError("");
+    try {
+      const res = await api.post<AuthResponse>("/auth/signup", {
+        name: form.name,
+        email: isEmail ? form.contact.trim() : undefined,
+        phone: isEmail ? undefined : form.contact.trim(),
+        password: form.password,
+      });
+      setSession(res);
+      dismiss();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Sign up failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-[80] flex items-center justify-center bg-ink/50 p-4 backdrop-blur-[2px]"
+      onClick={dismiss}
+      role="presentation"
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Sign up for Lickyeat"
+        className="relative w-full max-w-md animate-fade-up overflow-hidden rounded-3xl bg-white shadow-lift"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={dismiss}
+          aria-label="Close"
+          className="absolute right-3 top-3 z-10 grid h-8 w-8 place-items-center rounded-full bg-black/5 text-charcoal hover:bg-black/10"
+        >
+          <CloseIcon className="h-4 w-4" />
+        </button>
+
+        <div className="bg-brand px-6 py-7 text-brand-ink">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] opacity-70">Welcome to Lickyeat</p>
+          <h2 className="mt-1.5 font-display text-2xl font-extrabold leading-tight">
+            Create an account & get ₹50 off your first order
+          </h2>
+          <p className="mt-1.5 text-sm text-brand-ink/80">
+            One login for The Blenders Club, The Alchemy Tails and GG Tiffin.
+          </p>
+        </div>
+
+        <form onSubmit={submit} className="space-y-3 px-6 py-6">
+          <input
+            className="field"
+            placeholder="Your name"
+            required
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+          />
+          <input
+            className="field"
+            placeholder="Email or 10-digit phone"
+            required
+            value={form.contact}
+            onChange={(e) => setForm({ ...form, contact: e.target.value })}
+          />
+          <input
+            className="field"
+            type="password"
+            placeholder="Password (min 8 characters)"
+            required
+            minLength={8}
+            value={form.password}
+            onChange={(e) => setForm({ ...form, password: e.target.value })}
+          />
+          {error && <p className="text-sm text-rose-600">{error}</p>}
+          <button className="btn-primary w-full" disabled={busy}>
+            {busy ? "Creating…" : "Sign up"}
+          </button>
+
+          <div className="flex items-center justify-between pt-1 text-sm">
+            <button type="button" onClick={dismiss} className="font-semibold text-charcoal hover:text-ink">
+              Browse the menu
+            </button>
+            <Link href="/login" onClick={dismiss} className="text-muted hover:text-ink">
+              I have an account
+            </Link>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}

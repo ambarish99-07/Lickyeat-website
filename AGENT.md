@@ -74,6 +74,18 @@ apps/
   `lib/color.ts`. Tailwind maps `bg-brand`, `text-brand`, `brand-soft`, `text-brand-ink` etc. to
   those vars. **No brand colour, logo or id is hardcoded in component code.** `:root` in
   `globals.css` carries a warm fallback theme for non-brand pages.
+- **Layout width**: `.container-page` is `max-w-[1600px]` with responsive gutters (used by every
+  full-width section); `.container-narrow` (`max-w-3xl`) is for form/reading-width content.
+- **App banner**: `components/AppBanner.tsx` — dismissible top strip (localStorage
+  `lky_appbanner_dismissed`) linking to `/app`, the "Get the Lickyeat app" landing page. Hidden on
+  `/admin` and `/app`. Also linked from the header nav and footer.
+- **Signup prompt**: `components/SignupPrompt.tsx` — first-visit modal (localStorage
+  `lky_signup_prompt_seen`, ~1.1s delay), compact name+email/phone+password signup with a
+  "Browse the menu" escape. Suppressed when logged in and on `/login` `/signup` `/admin`
+  `/checkout`.
+- **Header**: brand mark image `apps/web/public/lickyeat-mark.png` (from the real logo art) +
+  wordmark; account and cart are icon buttons (`components/ui/icons.tsx`). Favicon at
+  `apps/web/src/app/icon.png`.
 - **Design system**: `globals.css` component classes (`.btn-*`, `.card`, `.field`, `.chip`,
   `.eyebrow`, `.container-page`) + `components/ui/*` (`Button`, `Modal`, `Field`, `Stepper`,
   `Badge`, `Price`, `Skeleton`, `EmptyState`). Fonts via `next/font` in `lib/fonts.ts` (Bricolage

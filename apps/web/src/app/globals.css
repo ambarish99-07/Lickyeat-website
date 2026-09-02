@@ -30,7 +30,11 @@
 
 @layer components {
   .container-page {
-    @apply mx-auto w-full max-w-6xl px-4 sm:px-6;
+    @apply mx-auto w-full max-w-[1600px] px-4 sm:px-6 lg:px-10 xl:px-14;
+  }
+  /* Narrower rail for reading-width content (forms, checkout, legal). */
+  .container-narrow {
+    @apply mx-auto w-full max-w-3xl px-4 sm:px-6;
   }
 
   .btn {
