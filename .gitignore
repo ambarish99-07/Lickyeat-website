@@ -1,17 +1,29 @@
 # Dependencies
 node_modules/
+.pnpm-store/
 
 # Build output
 dist/
 build/
+.next/
+out/
+*.tsbuildinfo
 
-# Environment
+# Turborepo
+.turbo/
+
+# Env
 .env
 .env.local
+.env.*.local
+
+# Test / coverage
+coverage/
 
 # Logs
 *.log
 npm-debug.log*
+pnpm-debug.log*
 
 # OS / editor
 .DS_Store
