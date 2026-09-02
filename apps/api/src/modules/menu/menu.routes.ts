@@ -5,8 +5,8 @@ import {
   UpdateComboRequestSchema,
   UpdateMenuItemRequestSchema,
 } from "@lickyeat/shared-types";
-import { asyncHandler, parse, param } from "../../lib/http.js";
-import { requireAdmin, requireAuth } from "../../middleware/auth.js";
+import { asyncHandler, parse, param, queryStr } from "../../lib/http.js";
+import { optionalAuth, requireAdmin, requireAuth } from "../../middleware/auth.js";
 import * as service from "./menu.service.js";
 
 export const menuRouter: Router = Router();
@@ -21,8 +21,12 @@ menuRouter.get(
 
 menuRouter.get(
   "/:brandId/items",
+  optionalAuth,
   asyncHandler(async (req, res) => {
-    res.json({ items: await service.listMenuItems(param(req, "brandId")) });
+    const includeUnavailable = req.user?.role === "admin" && queryStr(req, "all") === "1";
+    res.json({
+      items: await service.listMenuItems(param(req, "brandId"), { includeUnavailable }),
+    });
   }),
 );
 
