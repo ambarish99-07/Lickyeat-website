@@ -35,8 +35,10 @@ export const CartLineCustomizationSchema = z.object({
   ice: IceLevelSchema.optional(),
   selectedSizeLabel: z.string().max(40).optional(),
   addOns: z.array(z.string()).default([]),
-  /** choose-your-own combos: the item ids the customer picked. */
-  comboItemIds: z.array(ObjectIdSchema).default([]),
+  /** choose-n combos: the item ids the customer picked. */
+  comboItemIds: z.array(z.string()).default([]),
+  /** free-text special instruction for this line, e.g. "no straw". */
+  comment: z.string().max(200).optional(),
 });
 export type CartLineCustomization = z.infer<typeof CartLineCustomizationSchema>;
 
@@ -45,7 +47,8 @@ export const CreateOrderLineSchema = z.object({
   lineId: z.string().min(1),
   brandId: BrandIdSchema,
   kind: z.enum(["item", "combo"]),
-  refId: ObjectIdSchema,
+  /** menu item slug or combo id. */
+  refId: z.string().min(1),
   quantity: z.number().int().min(1).max(50),
   customization: CartLineCustomizationSchema.default({ addOns: [], comboItemIds: [] }),
 });
@@ -70,8 +73,12 @@ export type CreateOrderRequest = z.infer<typeof CreateOrderRequestSchema>;
 export const OrderLineSnapshotSchema = z.object({
   lineId: z.string(),
   kind: z.enum(["item", "combo"]),
-  refId: ObjectIdSchema,
+  refId: z.string(),
+  /** kept for order history / display — snapshotted at order time. */
   name: z.string(),
+  signatureName: z.string().default(""),
+  commonName: z.string().default(""),
+  imageUrl: z.string().nullable().default(null),
   quantity: z.number().int(),
   unitBasePrice: RupeesSchema,
   unitAddOnsPrice: RupeesSchema,
@@ -79,6 +86,7 @@ export const OrderLineSnapshotSchema = z.object({
   selectedSizeLabel: z.string().nullable(),
   sugar: SugarLevelSchema.nullable(),
   ice: IceLevelSchema.nullable(),
+  comment: z.string().nullable().default(null),
   lineSubtotal: RupeesSchema,
   isCombo: z.boolean(),
 });

@@ -12,9 +12,11 @@ async function seedMinimal() {
   await StoreSettingsModel.create({ scope: "lickyeat", manualOpen: true });
   await BrandModel.create({ brandId: "tbc", name: "The Blenders Club", orderingModel: "catalog", status: "live" });
   const item = await MenuItemModel.create({
+    _id: "cold-coffee",
     brandId: "tbc",
-    name: "Cold Coffee",
-    category: "Cold Coffee",
+    signatureName: "Cold Coffee",
+    commonName: "Classic Iced Coffee",
+    category: "cold-coffee",
     price: 120,
     isAvailable: true,
   });

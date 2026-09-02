@@ -1,6 +1,7 @@
 import type {
   CreateComboRequest,
   CreateMenuItemRequest,
+  MenuAddOn,
   UpdateComboRequest,
   UpdateMenuItemRequest,
 } from "@lickyeat/shared-types";
@@ -11,34 +12,61 @@ import { ComboModel } from "../../db/models/Combo.model.js";
 import { notFound } from "../../lib/errors.js";
 import { serialize } from "../../lib/serialize.js";
 
-/**
- * The public menu returns EVERY item for the brand — including out-of-stock
- * ones. The convention across this app is to show an unavailable item (or size
- * variant, or add-on) struck through / disabled, never hidden, so the customer
- * knows it exists and is just temporarily unorderable. Availability is still
- * enforced server-side at order time (priceResolver.ts). `opts` is retained for
- * callers that genuinely want only orderable items.
- */
-export async function listMenuItems(
-  brandId: string,
-  opts: { onlyAvailable?: boolean } = {},
-) {
+// ---------------------------------------------------------------------------
+// Add-on catalog resolution
+// ---------------------------------------------------------------------------
+
+export async function buildAddOnLookup(): Promise<
+  Map<string, { price: number; isAvailable: boolean }>
+> {
+  const rows = await MenuAddOnModel.find({}).lean();
+  return new Map(rows.map((r) => [r.name, { price: r.price, isAvailable: r.isAvailable ?? true }]));
+}
+
+/** Resolve `addOnNames` into priced `{name, price, isAvailable}`. A name whose
+ *  catalog entry was deleted is dropped; an unavailable one stays (shown disabled). */
+function resolveItemAddOns(
+  names: string[],
+  lookup: Map<string, { price: number; isAvailable: boolean }>,
+): MenuAddOn[] {
+  return names
+    .map((name) => {
+      const e = lookup.get(name);
+      return e ? { name, price: e.price, isAvailable: e.isAvailable } : null;
+    })
+    .filter((a): a is MenuAddOn => a !== null);
+}
+
+async function withResolvedAddOns<T extends { addOnNames?: string[] | null }>(items: T[]) {
+  const lookup = await buildAddOnLookup();
+  return items.map((i) => ({
+    ...serialize<Record<string, unknown>>(i),
+    addOns: resolveItemAddOns(i.addOnNames ?? [], lookup),
+  }));
+}
+
+// ---------------------------------------------------------------------------
+// Menu items
+// ---------------------------------------------------------------------------
+
+export async function listMenuItems(brandId: string, opts: { onlyAvailable?: boolean } = {}) {
   const filter: Record<string, unknown> = { brandId };
   if (opts.onlyAvailable) filter.isAvailable = true;
   const items = await MenuItemModel.find(filter)
     .collation({ locale: "en" })
-    .sort({ category: 1, isAvailable: -1, name: 1 })
+    .sort({ category: 1, isAvailable: -1, signatureName: 1 })
     .lean();
-  return items.map((i) => serialize(i));
+  return withResolvedAddOns(items);
 }
 
 export async function getMenuItem(id: string) {
   const item = await MenuItemModel.findById(id).lean();
   if (!item) throw notFound("Menu item not found");
-  return serialize(item);
+  const [resolved] = await withResolvedAddOns([item]);
+  return resolved;
 }
 
-/** Categories in a stable, curated order (falls back to alpha for unknown ones). */
+/** Categories in first-seen order (the seed lists items category-by-category). */
 export async function listCategories(brandId: string) {
   const items = await MenuItemModel.find({ brandId }).select("category").lean();
   const seen = new Set<string>();
@@ -49,20 +77,22 @@ export async function listCategories(brandId: string) {
       ordered.push(it.category);
     }
   }
-  return ordered.sort((a, b) => a.localeCompare(b));
+  return ordered;
 }
 
-/** The shared add-on catalog — always returns every entry (disabled ones included). */
-export async function listAddOns(opts: { onlyAvailable?: boolean } = {}) {
-  const filter = opts.onlyAvailable ? { isAvailable: true } : {};
-  const addOns = await MenuAddOnModel.find(filter)
+/** The shared add-on catalog — every entry (disabled ones included). */
+export async function listAddOns() {
+  const addOns = await MenuAddOnModel.find({})
     .collation({ locale: "en" })
     .sort({ isAvailable: -1, name: 1 })
     .lean();
   return addOns.map((a) => serialize(a));
 }
 
-/** Combos with a freshly-computed live price (never a stored bundle price). */
+// ---------------------------------------------------------------------------
+// Combos — live price = discountPercent (or 15%) off the constituents.
+// ---------------------------------------------------------------------------
+
 export async function listCombos(brandId: string) {
   const combos = await ComboModel.find({ brandId }).sort({ isAvailable: -1, name: 1 }).lean();
   const out = [];
@@ -71,16 +101,16 @@ export async function listCombos(brandId: string) {
     const items = await MenuItemModel.find({ _id: { $in: ids } }).lean();
     const availableCount = items.filter((i) => i.isAvailable ?? true).length;
     const need = combo.type === "curated" ? items.length : (combo.chooseCount ?? items.length);
+    const pct = combo.discountPercent ?? undefined;
 
-    // Curated combos price the exact set; choose-your-own prices the N cheapest
-    // AVAILABLE items (the customer can't pick a sold-out one anyway).
     const availablePrices = items
       .filter((i) => i.isAvailable ?? true)
-      .map((i) => i.price);
+      .map((i) => i.price)
+      .sort((a, b) => a - b);
     const livePrice =
       combo.type === "curated"
-        ? computeComboPrice(items.map((i) => i.price))
-        : computeComboPrice([...availablePrices].sort((a, b) => a - b).slice(0, need));
+        ? computeComboPrice(items.map((i) => i.price), pct)
+        : computeComboPrice(availablePrices.slice(0, need), pct);
 
     out.push({
       ...serialize<Record<string, unknown>>(combo),
@@ -90,6 +120,36 @@ export async function listCombos(brandId: string) {
     });
   }
   return out;
+}
+
+// ---------------------------------------------------------------------------
+// Admin
+// ---------------------------------------------------------------------------
+
+function slugify(s: string) {
+  return s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+export async function createMenuItem(input: CreateMenuItemRequest) {
+  const _id = input.id ?? slugify(input.signatureName);
+  const item = await MenuItemModel.create({ ...input, _id });
+  const [r] = await withResolvedAddOns([item.toObject()]);
+  return r;
+}
+
+export async function updateMenuItem(id: string, input: UpdateMenuItemRequest) {
+  const item = await MenuItemModel.findByIdAndUpdate(id, input, { new: true }).lean();
+  if (!item) throw notFound("Menu item not found");
+  const [r] = await withResolvedAddOns([item]);
+  return r;
+}
+
+export async function deleteMenuItem(id: string) {
+  const res = await MenuItemModel.findByIdAndDelete(id).lean();
+  if (!res) throw notFound("Menu item not found");
 }
 
 export async function createAddOn(input: { name: string; price: number; isAvailable?: boolean }) {
@@ -106,24 +166,9 @@ export async function updateAddOn(
   return serialize(addOn);
 }
 
-export async function createMenuItem(input: CreateMenuItemRequest) {
-  const item = await MenuItemModel.create(input);
-  return serialize(item.toObject());
-}
-
-export async function updateMenuItem(id: string, input: UpdateMenuItemRequest) {
-  const item = await MenuItemModel.findByIdAndUpdate(id, input, { new: true }).lean();
-  if (!item) throw notFound("Menu item not found");
-  return serialize(item);
-}
-
-export async function deleteMenuItem(id: string) {
-  const res = await MenuItemModel.findByIdAndDelete(id).lean();
-  if (!res) throw notFound("Menu item not found");
-}
-
 export async function createCombo(input: CreateComboRequest) {
-  const combo = await ComboModel.create(input);
+  const _id = input.id ?? slugify(input.name);
+  const combo = await ComboModel.create({ ...input, _id });
   return serialize(combo.toObject());
 }
 

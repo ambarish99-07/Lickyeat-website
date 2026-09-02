@@ -16,6 +16,9 @@ export interface ResolvedLineSnapshot {
   kind: "item" | "combo";
   refId: string;
   name: string;
+  signatureName: string;
+  commonName: string;
+  imageUrl: string | null;
   quantity: number;
   unitBasePrice: number;
   unitAddOnsPrice: number;
@@ -23,6 +26,7 @@ export interface ResolvedLineSnapshot {
   selectedSizeLabel: string | null;
   sugar: string | null;
   ice: string | null;
+  comment: string | null;
   lineSubtotal: number;
   isCombo: boolean;
 }
@@ -33,7 +37,7 @@ export interface ResolvedCart {
   snapshots: ResolvedLineSnapshot[];
 }
 
-/** Resolve the item side of the cart from the DB — prices NEVER come from the client. */
+/** Resolve the cart against the DB — prices and availability NEVER come from the client. */
 export async function resolveCart(lines: CreateOrderLine[]): Promise<ResolvedCart> {
   if (lines.length === 0) throw badRequest("Cart is empty.");
 
@@ -53,33 +57,33 @@ export async function resolveCart(lines: CreateOrderLine[]): Promise<ResolvedCar
   for (const line of lines) {
     if (line.kind === "item") {
       const item = await MenuItemModel.findById(line.refId).lean();
-      if (!item) throw unprocessable(`An item in your cart is no longer available.`);
+      if (!item) throw unprocessable("An item in your cart is no longer available.");
       if (item.brandId !== line.brandId && line.brandId !== CROSS_BRAND_ID) {
         throw badRequest("Cart item does not match its brand.");
       }
       if (!(item.isAvailable ?? true)) {
-        throw unprocessable(`"${item.name}" is currently out of stock.`);
+        throw unprocessable(`"${item.signatureName}" is currently out of stock.`);
       }
 
       // size resolution
       let unitBasePrice = item.price;
       let selectedSizeLabel: string | null = null;
       const sizeLabel = line.customization.selectedSizeLabel;
-      if (sizeLabel) {
+      if (sizeLabel && sizeLabel !== item.portionSize) {
         const variant = (item.sizeVariants ?? []).find((v) => v.label === sizeLabel);
-        if (!variant) throw badRequest(`Unknown size "${sizeLabel}" for ${item.name}.`);
+        if (!variant) throw badRequest(`Unknown size "${sizeLabel}" for ${item.signatureName}.`);
         if (!(variant.isAvailable ?? true)) {
-          throw unprocessable(`The ${sizeLabel} size of "${item.name}" is out of stock.`);
+          throw unprocessable(`The ${sizeLabel} size of "${item.signatureName}" is out of stock.`);
         }
         unitBasePrice = variant.price;
         selectedSizeLabel = variant.label;
       }
 
-      // add-on resolution
+      // add-on resolution (against the item's own offered list + shared catalog)
       const addOns: Array<{ name: string; price: number }> = [];
       for (const name of line.customization.addOns) {
-        if (!(item.allowedAddOns ?? []).includes(name)) {
-          throw badRequest(`"${name}" is not available for ${item.name}.`);
+        if (!(item.addOnNames ?? []).includes(name)) {
+          throw badRequest(`"${name}" is not available for ${item.signatureName}.`);
         }
         const catalogEntry = addOnByName.get(name);
         if (!catalogEntry) throw badRequest(`Unknown add-on "${name}".`);
@@ -90,20 +94,19 @@ export async function resolveCart(lines: CreateOrderLine[]): Promise<ResolvedCar
       }
       const unitAddOnsPrice = addOns.reduce((s, a) => s + a.price, 0);
 
-      const unitSale =
-        item.salePercent > 0
-          ? Math.round(unitBasePrice * (1 - item.salePercent / 100))
-          : unitBasePrice;
+      const salePct = item.salePercent ?? 0;
+      const unitSale = salePct > 0 ? Math.round(unitBasePrice * (1 - salePct / 100)) : unitBasePrice;
       const lineSubtotal = (unitSale + unitAddOnsPrice) * line.quantity;
+      const hasSugarIce = item.hasSugarIceCustomization ?? true;
 
       pricingLines.push({
         lineId: line.lineId,
         brandId: line.brandId,
-        name: item.name,
+        name: item.signatureName,
         unitBasePrice,
         quantity: line.quantity,
         unitAddOnsPrice,
-        salePercent: item.salePercent,
+        salePercent: salePct,
         isCombo: false,
         category: item.category,
       });
@@ -111,14 +114,18 @@ export async function resolveCart(lines: CreateOrderLine[]): Promise<ResolvedCar
         lineId: line.lineId,
         kind: "item",
         refId: String(item._id),
-        name: item.name,
+        name: item.signatureName,
+        signatureName: item.signatureName,
+        commonName: item.commonName,
+        imageUrl: item.imageUrl ?? null,
         quantity: line.quantity,
         unitBasePrice,
         unitAddOnsPrice,
         addOns,
         selectedSizeLabel,
-        sugar: line.customization.sugar ?? null,
-        ice: line.customization.ice ?? null,
+        sugar: hasSugarIce ? line.customization.sugar ?? null : null,
+        ice: hasSugarIce ? line.customization.ice ?? null : null,
+        comment: line.customization.comment ?? null,
         lineSubtotal,
         isCombo: false,
       });
@@ -143,15 +150,17 @@ export async function resolveCart(lines: CreateOrderLine[]): Promise<ResolvedCar
       }
 
       const items = await MenuItemModel.find({ _id: { $in: constituentIds } }).lean();
-      if (items.length !== constituentIds.length) {
+      if (items.length !== new Set(constituentIds).size) {
         throw unprocessable("A combo item is no longer on the menu.");
       }
       for (const it of items) {
         if (!(it.isAvailable ?? true)) {
-          throw unprocessable(`"${it.name}" (in ${combo.name}) is out of stock.`);
+          throw unprocessable(`"${it.signatureName}" (in ${combo.name}) is out of stock.`);
         }
       }
-      const unitBasePrice = computeComboPrice(items.map((i) => i.price));
+      const byId = new Map(items.map((i) => [String(i._id), i]));
+      const orderedPrices = constituentIds.map((id) => byId.get(id)!.price);
+      const unitBasePrice = computeComboPrice(orderedPrices, combo.discountPercent ?? undefined);
       const lineSubtotal = unitBasePrice * line.quantity;
 
       pricingLines.push({
@@ -170,6 +179,9 @@ export async function resolveCart(lines: CreateOrderLine[]): Promise<ResolvedCar
         kind: "combo",
         refId: String(combo._id),
         name: combo.name,
+        signatureName: combo.name,
+        commonName: constituentIds.map((id) => byId.get(id)!.signatureName).join(" + "),
+        imageUrl: combo.imageUrl ?? byId.get(constituentIds[0]!)?.imageUrl ?? null,
         quantity: line.quantity,
         unitBasePrice,
         unitAddOnsPrice: 0,
@@ -177,6 +189,7 @@ export async function resolveCart(lines: CreateOrderLine[]): Promise<ResolvedCar
         selectedSizeLabel: null,
         sugar: null,
         ice: null,
+        comment: line.customization.comment ?? null,
         lineSubtotal,
         isCombo: true,
       });

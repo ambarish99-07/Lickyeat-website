@@ -1,20 +1,12 @@
-import type {
-  CreateTiffinClosureRequest,
-  CreateTiffinSubscriptionRequest,
-} from "@lickyeat/shared-types";
-import {
-  CANCELLATION_FULL_REFUND_WINDOW_DAYS,
-  TIFFIN_PLAN_DAYS,
-} from "@lickyeat/shared-types";
+import type { CreateTiffinClosureRequest, CreateTiffinSubscriptionRequest } from "@lickyeat/shared-types";
+import { CANCELLATION_FULL_REFUND_WINDOW_DAYS, CANCELLATION_REFUND_PERCENT } from "@lickyeat/shared-types";
 import { TiffinSubscriptionModel } from "../../db/models/TiffinSubscription.model.js";
 import { TiffinSingleMealOrderModel } from "../../db/models/TiffinSingleMealOrder.model.js";
 import { TiffinClosureModel } from "../../db/models/TiffinClosure.model.js";
+import { TiffinPlanModel } from "../../db/models/TiffinPlan.model.js";
 import { badRequest, forbidden, notFound } from "../../lib/errors.js";
 import { serialize } from "../../lib/serialize.js";
 import { computeMealsForRangeSkippingClosedDates, mealsForStyle } from "./tiffinSchedule.js";
-import { getSingleMealBasePrice } from "./singleMealMenu.js";
-
-const PLAN_DISCOUNT: Record<"weekly" | "monthly", number> = { weekly: 0.05, monthly: 0.12 };
 
 export async function getActiveClosures() {
   const today = new Date().toISOString().slice(0, 10);
@@ -22,37 +14,45 @@ export async function getActiveClosures() {
   return closures.map((c) => ({ startDate: c.startDate, endDate: c.endDate }));
 }
 
-export function priceSubscription(input: {
-  meals: Array<{ meal: "breakfast" | "lunch" | "dinner"; status: string }>;
-  duration: "weekly" | "monthly";
-}): number {
-  const gross = input.meals
-    .filter((m) => m.status === "scheduled")
-    .reduce((s, m) => s + getSingleMealBasePrice(m.meal, "regular"), 0);
-  return Math.round(gross * (1 - PLAN_DISCOUNT[input.duration]));
+export async function listPlans() {
+  const plans = await TiffinPlanModel.find({ active: true })
+    .sort({ duration: 1, diet: 1, price: 1 })
+    .lean();
+  return plans.map((p) => serialize(p));
 }
 
-export async function createSubscription(
-  userId: string,
-  input: CreateTiffinSubscriptionRequest,
-) {
+/** Real charged price for a plan (its salePercent applied). */
+function planChargedPrice(plan: { price: number; salePercent?: number | null }): number {
+  return plan.salePercent ? Math.round(plan.price * (1 - plan.salePercent / 100)) : plan.price;
+}
+
+export async function createSubscription(userId: string, input: CreateTiffinSubscriptionRequest) {
+  const plan = await TiffinPlanModel.findById(input.planId).lean();
+  if (!plan || !plan.active) throw badRequest("That plan is no longer available.");
+  if (plan.style === "single" && !input.mealType) {
+    throw badRequest("Pick which meal you want for a single-meal-a-day plan.");
+  }
+
   const closureRanges = await getActiveClosures();
   const { meals, endDate } = computeMealsForRangeSkippingClosedDates({
     startDate: input.startDate,
-    deliveryDays: TIFFIN_PLAN_DAYS[input.duration],
-    diet: input.diet,
-    style: input.mealStyle,
+    deliveryDays: plan.durationDays,
+    diet: plan.diet,
+    style: plan.style,
+    singleMeal: input.mealType,
     closureRanges,
   });
 
-  const pricePaid = priceSubscription({ meals, duration: input.duration });
+  const pricePaid = planChargedPrice(plan);
 
   const sub = await TiffinSubscriptionModel.create({
     userId,
-    diet: input.diet,
-    tier: "regular",
-    mealStyle: input.mealStyle,
-    duration: input.duration,
+    planId: plan._id,
+    planName: plan.name,
+    diet: plan.diet,
+    style: plan.style,
+    mealType: plan.style === "single" ? input.mealType : null,
+    duration: plan.duration,
     startDate: input.startDate,
     endDate,
     address: input.address,
@@ -61,7 +61,7 @@ export async function createSubscription(
     pricePaid,
     payment: {
       method: input.paymentMethod,
-      status: input.paymentMethod === "cod" ? "pending" : "pending",
+      status: "pending",
       amount: pricePaid,
       razorpay: { orderId: null, paymentId: null, signature: null },
     },
@@ -127,7 +127,7 @@ export async function cancelSubscription(userId: string, id: string) {
     (Date.now() - new Date(sub.startDate + "T00:00:00Z").getTime()) / 86_400_000,
   );
   const withinWindow = daysSinceStart <= CANCELLATION_FULL_REFUND_WINDOW_DAYS;
-  const refundPercent = withinWindow ? 100 : 0;
+  const refundPercent = withinWindow ? CANCELLATION_REFUND_PERCENT : 0;
   const subPayment = sub.payment!;
   const paid = subPayment.status === "paid" ? subPayment.amount ?? 0 : 0;
   const refundAmount = Math.round((paid * refundPercent) / 100);
@@ -171,9 +171,12 @@ export async function declareClosure(input: CreateTiffinClosureRequest) {
     if (affected > 0) {
       const extra = computeMealsForRangeSkippingClosedDates({
         startDate: nextDay(sub.endDate ?? input.startDate),
-        deliveryDays: Math.ceil(affected / mealsForStyle(sub.mealStyle).length),
+        deliveryDays: Math.ceil(
+          affected / mealsForStyle(sub.style, sub.mealType ?? "lunch").length,
+        ),
         diet: sub.diet,
-        style: sub.mealStyle,
+        style: sub.style,
+        singleMeal: sub.mealType ?? "lunch",
         closureRanges: [{ startDate: input.startDate, endDate: input.endDate }],
       });
       sub.meals.push(

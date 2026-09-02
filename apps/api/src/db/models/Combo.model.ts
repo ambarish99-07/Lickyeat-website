@@ -1,18 +1,21 @@
-import { Schema, model, Types, type InferSchemaType } from "mongoose";
+import { Schema, model, type InferSchemaType } from "mongoose";
 
+/** `_id` is the slug (e.g. "choco-hazelnut-duo"). */
 const comboSchema = new Schema(
   {
+    _id: { type: String },
     brandId: { type: String, required: true, index: true, lowercase: true },
     name: { type: String, required: true },
     description: { type: String, default: "" },
-    type: { type: String, enum: ["curated", "choose-your-own"], required: true },
+    type: { type: String, enum: ["curated", "choose-n"], required: true },
     imageUrl: { type: String, default: null },
-    itemIds: { type: [Types.ObjectId], ref: "MenuItem", default: [] },
+    itemIds: { type: [String], default: [] },
     chooseCount: { type: Number, default: null },
-    eligibleItemIds: { type: [Types.ObjectId], ref: "MenuItem", default: [] },
+    eligibleItemIds: { type: [String], default: [] },
+    discountPercent: { type: Number, min: 1, max: 99, default: null },
     isAvailable: { type: Boolean, default: true },
   },
-  { timestamps: true },
+  { timestamps: true, _id: false },
 );
 
 export type ComboDoc = InferSchemaType<typeof comboSchema>;

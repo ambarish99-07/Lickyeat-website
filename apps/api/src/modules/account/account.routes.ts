@@ -70,7 +70,7 @@ accountRouter.get(
     }
     const catalog = (await MenuItemModel.find({ isAvailable: true }).lean()).map((i) => ({
       itemId: String(i._id),
-      name: i.name,
+      name: i.signatureName,
       brandId: i.brandId,
       category: i.category,
     }));

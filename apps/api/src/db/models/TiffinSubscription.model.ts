@@ -29,9 +29,19 @@ const scheduledMealSchema = new Schema(
 const subscriptionSchema = new Schema(
   {
     userId: { type: Types.ObjectId, ref: "User", required: true, index: true },
+    planId: { type: Types.ObjectId, ref: "TiffinPlan", required: true },
+    planName: { type: String, default: "" },
     diet: { type: String, enum: ["veg", "non-veg"], required: true },
-    tier: { type: String, enum: ["regular"], default: "regular" },
-    mealStyle: { type: String, enum: ["single", "twice", "thrice"], required: true },
+    style: {
+      type: String,
+      enum: ["single", "twice-daily", "thrice-daily"],
+      required: true,
+    },
+    mealType: {
+      type: String,
+      enum: ["breakfast", "lunch", "dinner"],
+      default: null,
+    },
     duration: { type: String, enum: ["weekly", "monthly"], required: true },
     startDate: String,
     endDate: String,

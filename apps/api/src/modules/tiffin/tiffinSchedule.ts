@@ -1,9 +1,12 @@
-import type { TiffinDiet, TiffinMealStyle, TiffinMealType } from "@lickyeat/shared-types";
+import type { TiffinDiet, TiffinMealType, TiffinPlanStyle } from "@lickyeat/shared-types";
 import { getTiffinDishForDay } from "@lickyeat/shared-types";
 
-export function mealsForStyle(style: TiffinMealStyle): TiffinMealType[] {
-  if (style === "single") return ["lunch"];
-  if (style === "twice") return ["lunch", "dinner"];
+export function mealsForStyle(
+  style: TiffinPlanStyle,
+  singleMeal: TiffinMealType = "lunch",
+): TiffinMealType[] {
+  if (style === "single") return [singleMeal];
+  if (style === "twice-daily") return ["lunch", "dinner"];
   return ["breakfast", "lunch", "dinner"];
 }
 
@@ -33,11 +36,12 @@ export function computeMealsForRangeSkippingClosedDates(opts: {
   startDate: string;
   deliveryDays: number;
   diet: TiffinDiet;
-  style: TiffinMealStyle;
+  style: TiffinPlanStyle;
+  singleMeal?: TiffinMealType;
   closureRanges: Array<{ startDate: string; endDate: string }>;
 }): { meals: ScheduledMeal[]; endDate: string } {
   const meals: ScheduledMeal[] = [];
-  const styleMeals = mealsForStyle(opts.style);
+  const styleMeals = mealsForStyle(opts.style, opts.singleMeal ?? "lunch");
   const isClosed = (date: string) =>
     opts.closureRanges.some((c) => date >= c.startDate && date <= c.endDate);
 

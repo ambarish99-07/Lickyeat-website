@@ -9,28 +9,28 @@ export const GG_TIFFIN_BRAND_ID = "gg-tiffin" as const;
 export const TiffinDietSchema = z.enum(["veg", "non-veg"]);
 export type TiffinDiet = z.infer<typeof TiffinDietSchema>;
 
+/** Single-meal ordering tiers. Subscriptions are always effectively "regular". */
 export const TiffinTierSchema = z.enum(["regular", "mini", "premium"]);
 export type TiffinTier = z.infer<typeof TiffinTierSchema>;
 
 export const TiffinMealTypeSchema = z.enum(["breakfast", "lunch", "dinner"]);
 export type TiffinMealType = z.infer<typeof TiffinMealTypeSchema>;
 
-/** single / twice / thrice daily. */
-export const TiffinMealStyleSchema = z.enum(["single", "twice", "thrice"]);
-export type TiffinMealStyle = z.infer<typeof TiffinMealStyleSchema>;
+/**
+ * "single" = one meal a day (customer picks breakfast/lunch/dinner at subscribe
+ * time). "twice-daily" = lunch + dinner. "thrice-daily" = all three.
+ */
+export const TiffinPlanStyleSchema = z.enum(["single", "twice-daily", "thrice-daily"]);
+export type TiffinPlanStyle = z.infer<typeof TiffinPlanStyleSchema>;
 
 export const TiffinPlanDurationSchema = z.enum(["weekly", "monthly"]);
 export type TiffinPlanDuration = z.infer<typeof TiffinPlanDurationSchema>;
 
-export const TIFFIN_PLAN_DAYS: Record<TiffinPlanDuration, number> = {
-  weekly: 7,
-  monthly: 30,
-};
+export const TIFFIN_PLAN_DAYS = { weekly: 7, monthly: 30 } as const;
 
 // Cancellation / refund policy (subscriptions)
 export const CANCELLATION_FULL_REFUND_WINDOW_DAYS = 15;
-export const CANCELLATION_REFUND_PERCENT = 0; // none after the window
-/** Weekly plans cannot be cancelled at all. */
+export const CANCELLATION_REFUND_PERCENT = 50; // % refunded inside the window
 export const WEEKLY_PLAN_CANCELLABLE = false;
 
 // Single-meal order cancellation
@@ -39,28 +39,56 @@ export const MAX_SINGLE_MEAL_QUANTITY = 10;
 
 // Meal ordering cutoffs (IST). Order today's meal only before its cutoff hour.
 export const MEAL_ORDERING_CUTOFF_HOUR_IST: Record<TiffinMealType, number> = {
-  breakfast: 21, // 9pm the night before
+  breakfast: 21, // 9 pm the night before
   lunch: 9,
   dinner: 15,
 };
 
 // ---------------------------------------------------------------------------
-// Curated weekly menu — a specific dish per weekday per meal type.
-// Index 0 = Sunday ... 6 = Saturday. Non-veg days override specific slots.
+// GG Tiffin's real weekly rotation (Regular tier). Index 0 = Sunday … 6 = Sat,
+// matching JS getUTCDay(). Non-veg differs from veg only on the days listed.
+// Source: the business's curated menu (see the TBC-app TiffinDish seed).
 // ---------------------------------------------------------------------------
 
 export type WeeklyDishTable = readonly [string, string, string, string, string, string, string];
 
-export const TIFFIN_REGULAR_VEG_MENU: Record<TiffinMealType, WeeklyDishTable> = {
-  breakfast: ["Poha", "Aloo Paratha", "Upma", "Besan Chilla", "Idli Sambar", "Bread Omelette", "Sabudana Khichdi"],
-  lunch: ["Rajma Chawal", "Aloo Gobhi", "Chole", "Kadhi Pakora", "Matar Paneer", "Bhindi Masala", "Dal Tadka"],
-  dinner: ["Mix Veg", "Aloo Parwal", "Lauki Masala", "Baingan Bharta", "Matar Chole", "Palak Paneer", "Jeera Aloo"],
+export const TIFFIN_WEEKLY_VEG: Record<TiffinMealType, WeeklyDishTable> = {
+  // Sun, Mon, Tue, Wed, Thu, Fri, Sat
+  breakfast: [
+    "Puri with Chole & Achar",
+    "Masala Pasta",
+    "Sandwich",
+    "Upma",
+    "Aloo Paratha with Curd & Achar",
+    "Poha",
+    "Sattu Paratha with Curd & Achar",
+  ],
+  lunch: [
+    "Lauki Masala",
+    "Aloo Matar",
+    "Aloo Parwal",
+    "Aloo Soyabean",
+    "Mushroom Masala",
+    "Rajma",
+    "Aloo Gobhi",
+  ],
+  dinner: [
+    "Dum Aloo",
+    "Aloo Gobhi",
+    "Lauki Masala",
+    "Matar Paneer",
+    "Dum Aloo",
+    "Matar Chole",
+    "Matar Mushroom",
+  ],
 };
 
-/** Non-veg overrides (applied on top of the veg table for non-veg subscribers). */
-export const TIFFIN_NONVEG_OVERRIDES: Partial<Record<TiffinMealType, Partial<Record<number, string>>>> = {
-  lunch: { 0: "Chicken Curry", 3: "Egg Curry", 6: "Chicken Masala" },
-  dinner: { 2: "Egg Bhurji", 5: "Chicken Curry" },
+/** Non-veg swaps, keyed by weekday index (0 = Sunday). */
+export const TIFFIN_WEEKLY_NONVEG_OVERRIDES: Partial<
+  Record<TiffinMealType, Partial<Record<number, string>>>
+> = {
+  breakfast: { 3: "Bread Omelette" }, // Wed
+  dinner: { 1: "Fish Curry", 3: "Egg Curry", 5: "Chicken Curry" }, // Mon / Wed / Fri
 };
 
 export function getTiffinDishForDay(
@@ -68,13 +96,55 @@ export function getTiffinDishForDay(
   diet: TiffinDiet,
   weekday: number,
 ): string {
-  const base = TIFFIN_REGULAR_VEG_MENU[meal][weekday as 0] ?? "Home-style Thali";
+  const wd = ((weekday % 7) + 7) % 7;
   if (diet === "non-veg") {
-    const override = TIFFIN_NONVEG_OVERRIDES[meal]?.[weekday];
+    const override = TIFFIN_WEEKLY_NONVEG_OVERRIDES[meal]?.[wd];
     if (override) return override;
   }
-  return base;
+  return TIFFIN_WEEKLY_VEG[meal][wd as 0] ?? "Home-style Thali";
 }
+
+/** Real single-meal prices, per (tier, meal). Mini has no breakfast. */
+export const TIFFIN_MEAL_PRICES: Record<TiffinTier, Partial<Record<TiffinMealType, number>>> = {
+  regular: { breakfast: 79, lunch: 129, dinner: 129 },
+  mini: { lunch: 99, dinner: 99 },
+  premium: { breakfast: 99, lunch: 169, dinner: 169 },
+};
+
+/** Shared flat add-on prices (single-meal). */
+export const TIFFIN_ADD_ON_PRICES: Record<string, number> = {
+  Rice: 20,
+  Roti: 10,
+  Daal: 20,
+  Paratha: 15,
+  Pulao: 25,
+  "Fish piece": 45,
+  "Egg piece": 15,
+  "Chicken piece": 40,
+  "Mutton piece": 60,
+  "Extra Portion": 30,
+};
+
+// ---------------------------------------------------------------------------
+// Plans
+// ---------------------------------------------------------------------------
+
+export const TiffinPlanSchema = z.object({
+  id: ObjectIdSchema,
+  name: z.string(),
+  diet: TiffinDietSchema,
+  style: TiffinPlanStyleSchema,
+  duration: TiffinPlanDurationSchema,
+  durationDays: z.number().int().positive(),
+  /** Flat price for the whole plan (strikethrough value when salePercent set). */
+  price: RupeesSchema,
+  salePercent: z.number().min(1).max(99).nullable().default(null),
+  imageUrl: z.string().nullable().default(null),
+  active: z.boolean().default(true),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+export type TiffinPlan = z.infer<typeof TiffinPlanSchema>;
 
 // ---------------------------------------------------------------------------
 // Subscription
@@ -97,10 +167,13 @@ export const TiffinScheduledMealSchema = z.object({
 export const TiffinSubscriptionSchema = z.object({
   id: ObjectIdSchema,
   userId: ObjectIdSchema,
+  planId: ObjectIdSchema,
+  planName: z.string(),
   diet: TiffinDietSchema,
-  tier: z.literal("regular"),
-  mealStyle: TiffinMealStyleSchema,
+  style: TiffinPlanStyleSchema,
   duration: TiffinPlanDurationSchema,
+  /** the customer's meal choice for a "single" style plan. */
+  mealType: TiffinMealTypeSchema.nullable(),
   startDate: z.string(),
   endDate: z.string(),
   address: AddressSchema,
@@ -127,9 +200,9 @@ export const TiffinSubscriptionSchema = z.object({
 export type TiffinSubscription = z.infer<typeof TiffinSubscriptionSchema>;
 
 export const CreateTiffinSubscriptionRequestSchema = z.object({
-  diet: TiffinDietSchema,
-  mealStyle: TiffinMealStyleSchema,
-  duration: TiffinPlanDurationSchema,
+  planId: z.string(),
+  /** required only for a "single" style plan. */
+  mealType: TiffinMealTypeSchema.optional(),
   startDate: z.string(),
   address: AddressSchema,
   paymentMethod: PaymentMethodSchema,
@@ -152,6 +225,7 @@ export const TiffinSingleMealOrderSchema = z.object({
   meal: TiffinMealTypeSchema,
   date: z.string(),
   dishName: z.string(),
+  imageUrl: z.string().nullable().default(null),
   quantity: z.number().int().min(1),
   addOns: z.array(z.object({ name: z.string(), price: RupeesSchema })),
   baseprice: RupeesSchema,

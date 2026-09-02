@@ -9,6 +9,7 @@ import { sendWhatsAppOrderUpdate } from "../../integrations/whatsapp.js";
 import { isWithinDeliveryZone } from "../orders/deliveryZone.js";
 import { pickDeliveryPartner } from "../orders/deliveryPartner.js";
 import { getActiveClosures } from "./tiffin.service.js";
+import { tiffinImageUrl } from "../../lib/assets.js";
 import {
   getSingleMealBasePrice,
   getSingleMealDish,
@@ -26,14 +27,18 @@ export function getSingleMealMenu(dateStr: string) {
     if (!isMealOrderableForDate(meal, dateStr)) continue;
     for (const diet of diets) {
       for (const tier of tiers) {
+        const dish = getSingleMealDish(meal, diet, tier, dateStr);
+        const basePrice = getSingleMealBasePrice(tier, meal);
+        if (!dish || basePrice == null) continue;
         out.push({
           meal,
           diet,
           tier,
           date: dateStr,
-          dishName: getSingleMealDish(meal, diet, tier, dateStr),
-          basePrice: getSingleMealBasePrice(meal, tier),
-          addOns: resolveAddOns(tier, meal, diet),
+          dishName: dish.name,
+          imageUrl: tiffinImageUrl(dish.imageSlug),
+          basePrice,
+          addOns: resolveAddOns(tier, meal, diet, dateStr),
         });
       }
     }
@@ -56,9 +61,12 @@ export async function createSingleMealOrder(
     throw badRequest("GG Tiffin is closed on that date.");
   }
 
-  const dishName = getSingleMealDish(input.meal, input.diet, input.tier, input.date);
-  const basePrice = getSingleMealBasePrice(input.meal, input.tier);
-  const addOns = priceAddOns(input.tier, input.meal, input.diet, input.addOns);
+  const dish = getSingleMealDish(input.meal, input.diet, input.tier, input.date);
+  const basePrice = getSingleMealBasePrice(input.tier, input.meal);
+  if (!dish || basePrice == null) {
+    throw badRequest("That meal isn't on the menu for this date and tier.");
+  }
+  const addOns = priceAddOns(input.tier, input.meal, input.diet, input.date, input.addOns);
   const addOnsPrice = addOns.reduce((s, a) => s + a.price, 0);
   const total = (basePrice + addOnsPrice) * input.quantity;
 
@@ -70,7 +78,8 @@ export async function createSingleMealOrder(
     tier: input.tier,
     meal: input.meal,
     date: input.date,
-    dishName,
+    dishName: dish.name,
+    imageUrl: tiffinImageUrl(dish.imageSlug),
     quantity: input.quantity,
     addOns,
     baseprice: basePrice,

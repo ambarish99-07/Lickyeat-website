@@ -9,24 +9,31 @@ const sizeVariantSchema = new Schema(
   { _id: false },
 );
 
+/** `_id` is the slug (e.g. "choco-crush") — also the image slug and the id
+ *  `pairsWith` / combos reference. */
 const menuItemSchema = new Schema(
   {
+    _id: { type: String },
     brandId: { type: String, required: true, index: true, lowercase: true },
-    name: { type: String, required: true },
+    signatureName: { type: String, required: true },
+    commonName: { type: String, required: true },
     description: { type: String, default: "" },
     category: { type: String, required: true },
     price: { type: Number, required: true, min: 0 },
     portionSize: { type: String, default: "" },
     imageUrl: { type: String, default: null },
-    salePercent: { type: Number, default: 0, min: 0, max: 100 },
+    flavorBadges: { type: [String], default: [] },
+    isPopular: { type: Boolean },
+    isNew: { type: Boolean },
+    isStaffPick: { type: Boolean },
+    salePercent: { type: Number, min: 1, max: 99 },
     sizeVariants: { type: [sizeVariantSchema], default: [] },
-    allowedAddOns: { type: [String], default: [] },
-    supportsSugar: { type: Boolean, default: false },
-    supportsIce: { type: Boolean, default: false },
+    pairsWith: { type: [String], default: [] },
+    hasSugarIceCustomization: { type: Boolean, default: true },
+    addOnNames: { type: [String], default: [] },
     isAvailable: { type: Boolean, default: true },
-    tags: { type: [String], default: [] },
   },
-  { timestamps: true },
+  { timestamps: true, _id: false },
 );
 
 export type MenuItemDoc = InferSchemaType<typeof menuItemSchema>;

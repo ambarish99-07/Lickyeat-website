@@ -9,12 +9,29 @@ import {
 } from "@lickyeat/shared-types";
 import { asyncHandler, parse, param } from "../../lib/http.js";
 import { optionalAuth, requireAdmin, requireAuth } from "../../middleware/auth.js";
+import { tiffinImageUrl } from "../../lib/assets.js";
+import { resolveDish } from "./tiffinDishData.js";
 import * as subs from "./tiffin.service.js";
 import * as single from "./singleMeal.service.js";
 
 export const tiffinRouter: Router = Router();
 
+/** A date string for a given weekday (0=Sun) in the current week — for menu display. */
+function isoForWeekday(weekday: number): string {
+  const now = new Date();
+  const diff = weekday - now.getUTCDay();
+  const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + diff));
+  return d.toISOString().slice(0, 10);
+}
+
 // ---- menu (public) ----
+tiffinRouter.get(
+  "/plans",
+  asyncHandler(async (_req, res) => {
+    res.json({ plans: await subs.listPlans() });
+  }),
+);
+
 tiffinRouter.get(
   "/weekly-menu",
   asyncHandler(async (req, res) => {
@@ -22,7 +39,10 @@ tiffinRouter.get(
     const meals = ["breakfast", "lunch", "dinner"] as const;
     const table = meals.map((meal) => ({
       meal,
-      days: Array.from({ length: 7 }, (_, weekday) => getTiffinDishForDay(meal, diet, weekday)),
+      days: Array.from({ length: 7 }, (_, weekday) => {
+        const dish = resolveDish("regular", diet, meal, isoForWeekday(weekday));
+        return { name: dish?.dishName ?? getTiffinDishForDay(meal, diet, weekday), imageUrl: tiffinImageUrl(dish?.imageSlug) };
+      }),
     }));
     res.json({ brandId: GG_TIFFIN_BRAND_ID, diet, table });
   }),
