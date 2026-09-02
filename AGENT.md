@@ -52,6 +52,33 @@ apps/
 - **Any schema change** → rebuild shared-types (`pnpm --filter @lickyeat/shared-types build`)
   before api's `tsx watch` / web sees it. `pnpm -r typecheck` rebuilds packages via Turbo.
 
+### Web app architecture (`apps/web`)
+
+- **Public pages are Server Components** with per-page `generateMetadata` + ISR (`revalidate`):
+  `app/page.tsx` (home), `app/b/[brandId]/page.tsx`, `app/coming-soon/[brandId]/page.tsx`,
+  `app/tiffin/page.tsx`. They fetch via `lib/serverApi.ts` (`serverGet` — absolute URL from
+  `API_INTERNAL_URL`, default `http://localhost:4100`, wrapped in try/catch so an API-down build
+  still renders a shell). Interactive bits are Client Components fed by props (e.g.
+  `components/menu/BrandMenu.tsx`, `components/tiffin/TiffinLanding.tsx`).
+- **Auth-gated + cart/checkout pages are Client Components** using SWR through the `/api` proxy
+  (`lib/api.ts`, `swrFetcher` in `app/providers.tsx`). `components/RequireAuth.tsx` gates them
+  (`admin` prop for the admin section).
+- **Brand theming**: `components/BrandTheme.tsx` sets `--brand` / `--brand-accent` / `--brand-ink`
+  (space-separated RGB channels) from a Brand record's `primaryColor` / `accentColor` via
+  `lib/color.ts`. Tailwind maps `bg-brand`, `text-brand`, `brand-soft`, `text-brand-ink` etc. to
+  those vars. **No brand colour, logo or id is hardcoded in component code.** `:root` in
+  `globals.css` carries a warm fallback theme for non-brand pages.
+- **Design system**: `globals.css` component classes (`.btn-*`, `.card`, `.field`, `.chip`,
+  `.eyebrow`, `.container-page`) + `components/ui/*` (`Button`, `Modal`, `Field`, `Stepper`,
+  `Badge`, `Price`, `Skeleton`, `EmptyState`). Fonts via `next/font` in `lib/fonts.ts` (Bricolage
+  Grotesque display + Inter body). `.input`/`.label` are legacy aliases kept for the admin pages.
+- **Client-side pricing**: `lib/clientPricing.ts#estimatePricing` runs the SAME `@lickyeat/pricing`
+  `computePricing` for an instant cart estimate; the authoritative `/pricing/preview` response
+  always supersedes it (it can't know the coupon amount / paid membership / delivery radius).
+- **Assets**: brand logo SVGs are served by the API at `/static/brands/*.svg` and reached from the
+  browser through the web's own `/api` proxy — `lib/format.ts#assetUrl` turns a stored
+  `/static/...` path into `/api/static/...`.
+
 ---
 
 ## 3. Conventions carried over from the mobile app (don't reinvent per-feature)
@@ -101,17 +128,19 @@ combo subtotal is excluded from the quantity-tier base.
 
 | Feature | Web | API |
 |---|---|---|
-| Brand list / coming-soon | `app/page.tsx` | `GET /brands`, `/brands/coming-soon` |
-| Brand menu, combos, customize | `app/b/[brandId]/`, `components/CustomizeModal`, `ComboCard` | `GET /menu/:brandId/{items,combos,categories}`, `/menu/addons` |
-| Cart + live pricing + coupon | `app/cart/`, `state/cartStore` | `POST /pricing/preview` |
+| Home — brand showcase (SSR) | `app/page.tsx`, `components/BrandShowcaseCard` | `GET /brands` |
+| Coming-soon teaser (SSR) | `app/coming-soon/[brandId]/` | `GET /brands/:brandId` |
+| Brand menu, combos, customize (SSR shell + client menu) | `app/b/[brandId]/`, `components/BrandHero`, `components/menu/{BrandMenu,MenuItemCard,CustomizeSheet,ComboCard}` | `GET /menu/:brandId/{items,combos,categories}`, `/menu/addons` — **all return out-of-stock rows too** |
+| Cart + estimate/preview + coupon | `app/cart/`, `state/cartStore`, `lib/clientPricing` | `POST /pricing/preview` |
 | Checkout (COD + simulated Razorpay) | `app/checkout/` | `POST /orders`, `/orders/verify-payment` |
-| Order tracking (timeline, partner, map, cancel) | `app/order/[token]/`, `components/OrderTracker`, `lib/mapEmbed` | `GET /orders/track/:token`, `POST .../cancel` |
-| Active-order pills | `components/ActiveOrderPills` (mounted in root layout) | `/orders/mine`, `/tiffin/single-meal/orders/mine` |
-| Tiffin landing + weekly menu + veg-only toggle | `app/tiffin/`, `state/tiffinPreferencesStore` | `GET /tiffin/weekly-menu` |
+| Order tracking (timeline, partner, map, price, cancel) | `app/order/[token]/`, `components/OrderTracker`, `lib/mapEmbed` | `GET /orders/track/:token`, `POST .../cancel` |
+| Active-order pills | `components/ActiveOrderPills` (root layout; hidden on tracking/cart/checkout/admin) | `/orders/mine`, `/tiffin/single-meal/orders/mine` |
+| Tiffin landing + weekly menu + veg-only + closure banner (SSR + client) | `app/tiffin/`, `components/tiffin/{TiffinLanding,TiffinShell}`, `state/tiffinPreferencesStore` | `GET /tiffin/weekly-menu`, `/tiffin/closures` |
 | Tiffin subscribe / manage (pause, skip, cancel) | `app/tiffin/subscribe/`, `app/tiffin/subscriptions/` | `/tiffin/subscriptions*` |
 | Tiffin single meal + tracking | `app/tiffin/single-meal/`, `app/tiffin/track/[token]/` | `/tiffin/single-meal/*` |
-| Premium Membership | `app/account/` | `/premium-membership/{status,purchase,verify}` |
-| Store status banners | `components/StoreClosedBanner` | `/brands/:brandId/status`, `/store-settings/*` |
+| Premium Membership | `app/premium/`, `app/account/` | `/premium-membership/{status,purchase,verify}` |
+| Account (profile, addresses, loyalty) | `app/account/` | `/account/{profile,addresses,recommendations}` |
+| Store status banners | `components/StoreClosedBanner` (accepts a server-fetched `status` prop) | `/brands/:brandId/status`, `/store-settings/*` |
 | Admin (dashboard, orders, catalog, coupons, store, tiffin) | `app/admin/*` | `/admin/*`, `/orders/admin/*`, `/tiffin/admin/*` |
 
 Advancing a regular order to `out-for-delivery` (admin only) is the **only** way to assign a
@@ -134,10 +163,15 @@ catalog, menu items, combos, coupons, store settings. Seeding does not create an
 via the web app, then `pnpm --filter @lickyeat/api promote-admin <email-or-phone>`.
 
 Because the in-memory Mongo is per-process, `pnpm seed` and a separately-started `dev` server do
-**not** share data — point both at a real `MONGODB_URI` to seed-then-run.
+**not** share data. Set `SEED_ON_BOOT=1` in `apps/api/.env` (already in `.env.example`) and the API
+seeds itself on boot when the DB is empty — the simplest local setup. Or point both at a real
+`MONGODB_URI`.
 
-Tests: `pnpm -r test` — `packages/pricing` (19 unit), `apps/api/__tests__` (auth + order flow
-integration, mongodb-memory-server). No web component tests yet.
+Tests: `pnpm -r test` — `packages/pricing` (19 unit), `packages/shared-types` (8), `apps/api`
+(auth / order flow / menu-availability integration, mongodb-memory-server). No web component tests.
+
+If dev shows `SegmentViewNode` / `__webpack_modules__ is not a function` errors, delete
+`apps/web/.next` and restart — that's stale build cache from alternating `next build` / `next dev`.
 
 ---
 
@@ -145,8 +179,9 @@ integration, mongodb-memory-server). No web component tests yet.
 
 - No real geocoding, no real rider dispatch (fixed demo partner pool), refunds recorded but never
   pushed through Razorpay, WhatsApp fail-silent with placeholder messages.
-- No image uploads / asset pipeline on the web build (mobile app has one) — `imageUrl` fields exist
-  in schemas but the seed leaves them null; cards render text-only.
+- Menu-item / hero photography: `imageUrl` / `heroImageUrl` are supported and rendered when set,
+  but the seed only ships brand **logo** SVGs (`/static/brands/*.svg`). Item cards and brand heroes
+  fall back to typography + brand-colour compositions until real photos are supplied.
 - No web E2E tests; no deployment (Render / Vercel unprovisioned).
 - Admin is a lightweight in-app section, not the full mobile-app admin surface (no Analytics,
   Customers deep-dive, Reviews & Complaints, Bulk Orders, brand tab pages, size-variant editor).
