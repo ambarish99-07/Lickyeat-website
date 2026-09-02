@@ -12,15 +12,21 @@ last edit," not guaranteed-current. When in doubt, grep.
 
 ## 1. What this is
 
-A full ordering **web app** for lickyeat.com serving the same three brands under one umbrella:
+A full ordering **web app** for lickyeat.com serving the same brands under one umbrella:
 
-| Brand | brandId | Model |
-|---|---|---|
-| The Blenders Club | `tbc` | catalog (cart → checkout) |
-| The Alchemy Tails | `alchemy-tails` | catalog |
-| GG Tiffin Service | `gg-tiffin` | tiffin (subscriptions + single-meal, **separate order universe**) |
+| Brand | brandId | Model | Menu |
+|---|---|---|---|
+| The Blenders Club | `tbc` | catalog | 12 signature thick shakes + 3 cold coffees (Choco Crush, Hazelnut Heaven, Coffee Chill …), ₹179–249 |
+| The Alchemy Tails | `alchemy-tails` | catalog | 15 mocktails (Blue Lagoon, Mango Mojito, Rainbow Fizz …), ₹129–199 |
+| GG Tiffin Service | `gg-tiffin` | tiffin (subscriptions + single-meal, **separate order universe**) | Bihari home food — real weekly rotation (Aloo Matar, Rajma, Dum Aloo, Chicken/Fish/Egg/Mutton Curry …), Regular/Mini/Premium tiers, 12 fixed plans |
 
 Plus `the-biryani-lane` seeded as a `coming-soon` brand (proof the "new brand" path works).
+
+**The catalog matches the real Lickyeat app** — item names, prices, combos, coupons
+(`WELCOME50` + `FLAT50…FLAT400`), brand palettes and photography were brought over from the
+reference project (`d:\TBC app`). Real photos live in `apps/api/public/{menu,tiffin}-images/`
+(compressed from the originals — `scripts/optimizeImages.mjs`) and `apps/api/public/brands/`,
+served at `/static/...` and proxied to the browser via `/api/static/...`.
 
 Business is Patna-only. Delivery zone is a hardcoded city+pincode check
 (`apps/api/src/modules/orders/deliveryZone.ts`) — no geocoding.
@@ -107,6 +113,21 @@ apps/
    `apps/api/src/db/models/Order.model.ts` (`DISCOUNT_REASONS` / `REWARD_REASONS` arrays), and
    `apps/web/src/components/PriceBreakdown.tsx` (`DISCOUNT_LABELS` / `REWARD_LABELS` — the
    exhaustive `Record<Reason, string>` there is the compile-time safety net).
+8. **A `MenuItem` has two names.** `signatureName` (the fun one, shown big — "Choco Crush") and
+   `commonName` (plain — "Rich Chocolate Shake", shown small). Its `_id` is the slug (also the
+   image slug and the id `pairsWith` / combos reference). `flavorBadges` + `isPopular` /
+   `isNew` / `isStaffPick` drive the "Trending / New / Staff Pick" chips. `hasSugarIceCustomization`
+   (one flag) gates the sugar+ice pickers; sugar/ice levels are `less` / `regular` / `extra`.
+   Add-ons: `addOnNames` (into the shared `MenuAddOn` catalog) is resolved to an embedded
+   `addOns: {name,price,isAvailable}[]` on every read — the client never fetches the catalog
+   separately. Combos are `curated` (fixed 2-item duos) or `choose-n`, with an optional
+   `discountPercent` override (default 15).
+9. **GG Tiffin is Plan-based.** `TiffinPlan` rows (12: single / twice-daily / thrice-daily ×
+   veg/non-veg × weekly/monthly, each a flat price + optional `salePercent`). Subscribe = pick a
+   plan (+ a `mealType` for `single` plans). The real weekly rotation + single-meal tiers
+   (regular/mini/premium), prices and add-ons live in
+   `apps/api/src/modules/tiffin/tiffinDishData.ts` (one row per tier×diet×meal×weekday) —
+   `shared-types` keeps a Regular-tier table only for the public weekly-menu display.
 
 ---
 

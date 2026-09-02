@@ -1,9 +1,14 @@
 # Lickyeat Website
 
 Full ordering web app for **lickyeat.com** — Next.js customer site + Express API + admin section,
-in a pnpm / Turborepo monorepo. Three brands under one umbrella: **The Blenders Club**,
-**The Alchemy Tails** (shakes & mocktails, cart checkout) and **GG Tiffin Service** (home-style
-tiffin subscriptions + single meals).
+in a pnpm / Turborepo monorepo. Brands under one umbrella:
+
+- **The Blenders Club** — thick shakes & cold coffee (Choco Crush, Hazelnut Heaven, Coffee Chill …)
+- **The Alchemy Tails** — zero-proof mocktails (Blue Lagoon, Mango Mojito, Rainbow Fizz …)
+- **GG Tiffin Service** — Bihari home-style tiffin, weekly/monthly plans or single meals
+- **The Biryani Lane** — coming soon
+
+The catalog, prices, combos, coupons, brand identity and photography match the real Lickyeat app.
 
 See [AGENT.md](AGENT.md) for architecture, business rules, and the full feature map.
 
