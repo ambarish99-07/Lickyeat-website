@@ -2,39 +2,40 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { CROSS_BRAND_ID, type PricingCartLine } from "@lickyeat/shared-types";
+import {
+  CROSS_BRAND_ID,
+  type IceLevel,
+  type PricingCartLine,
+  type SugarLevel,
+} from "@lickyeat/shared-types";
 
 export interface CartCustomization {
-  sugar?: "none" | "less" | "normal" | "extra";
-  ice?: "none" | "less" | "normal" | "extra";
+  sugar?: SugarLevel;
+  ice?: IceLevel;
   selectedSizeLabel?: string;
   addOns: string[];
   comboItemIds: string[];
+  comment?: string;
 }
 
 export interface CartLine {
-  /** stable client id */
   lineId: string;
-  /**
-   * Fixed at add-time. Checkout derives the order's brand from the cart's own
-   * lines (`cartBrandId()`), never from whatever brand is ambiently selected.
-   */
+  /** Fixed at add-time — checkout derives the order brand from the lines. */
   brandId: string;
   kind: "item" | "combo";
   refId: string;
-  name: string;
+  signatureName: string;
+  commonName: string;
   imageUrl: string | null;
   category: string;
   /** size-resolved unit price, BEFORE per-item sale and add-ons. */
   unitBasePrice: number;
   salePercent: number;
-  /** resolved per-unit add-on total. */
   unitAddOnsPrice: number;
   quantity: number;
   customization: CartCustomization;
 }
 
-/** Per-unit price a line displays for (sale applied, add-ons added). */
 export function lineUnitPrice(l: CartLine): number {
   const sale = l.salePercent > 0 ? Math.round(l.unitBasePrice * (1 - l.salePercent / 100)) : l.unitBasePrice;
   return sale + l.unitAddOnsPrice;
@@ -46,10 +47,8 @@ interface CartState {
   setQty: (lineId: string, quantity: number) => void;
   remove: (lineId: string) => void;
   clear: () => void;
-  /** the single brand this cart belongs to (or null when empty). */
   cartBrandId: () => string | null;
   count: () => number;
-  /** map to the pure pricing engine's input shape for an instant local estimate. */
   pricingLines: () => PricingCartLine[];
 }
 
@@ -71,9 +70,7 @@ export const useCart = create<CartState>()(
           if (existing) {
             return {
               lines: s.lines.map((l) =>
-                l.lineId === existing.lineId
-                  ? { ...l, quantity: l.quantity + quantity }
-                  : l,
+                l.lineId === existing.lineId ? { ...l, quantity: l.quantity + quantity } : l,
               ),
             };
           }
@@ -99,7 +96,7 @@ export const useCart = create<CartState>()(
         get().lines.map((l) => ({
           lineId: l.lineId,
           brandId: l.brandId,
-          name: l.name,
+          name: l.signatureName,
           unitBasePrice: l.unitBasePrice,
           quantity: l.quantity,
           unitAddOnsPrice: l.unitAddOnsPrice,
@@ -108,6 +105,6 @@ export const useCart = create<CartState>()(
           category: l.category,
         })),
     }),
-    { name: "lky_cart", version: 2 },
+    { name: "lky_cart", version: 3 },
   ),
 );

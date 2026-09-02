@@ -8,6 +8,7 @@ import type {
   PremiumMembershipStatus,
   PricingResult,
   StoreStatus,
+  TiffinPlan,
   TiffinSingleMealOrder,
   TiffinSubscription,
   User,
@@ -18,6 +19,29 @@ export type ComboWithLive = Combo & {
   orderable: boolean;
   constituents: MenuItem[];
 };
+
+export interface WeeklyMenuDay {
+  name: string;
+  imageUrl: string | null;
+}
+export interface WeeklyMenuResponse {
+  brandId: string;
+  diet: "veg" | "non-veg";
+  table: Array<{ meal: string; days: WeeklyMenuDay[] }>;
+}
+export interface TiffinPlansResponse {
+  plans: TiffinPlan[];
+}
+export interface SingleMealOption {
+  meal: "breakfast" | "lunch" | "dinner";
+  diet: "veg" | "non-veg";
+  tier: "regular" | "mini" | "premium";
+  date: string;
+  dishName: string;
+  imageUrl: string | null;
+  basePrice: number;
+  addOns: Array<{ name: string; price: number }>;
+}
 
 export interface BrandsResponse {
   brands: Brand[];

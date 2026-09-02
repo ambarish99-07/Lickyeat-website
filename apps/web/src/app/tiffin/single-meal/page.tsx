@@ -9,19 +9,11 @@ import { TiffinShell } from "@/components/tiffin/TiffinShell";
 import { useAuth } from "@/state/authStore";
 import { useTiffinPrefs } from "@/state/tiffinPreferencesStore";
 import { api, ApiError } from "@/lib/api";
-import { rupees } from "@/lib/format";
+import { rupees, assetUrl } from "@/lib/format";
+import type { SingleMealOption } from "@/lib/apiTypes";
 import { Field, Input, SegmentedControl } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { Stepper, cn } from "@/components/ui/misc";
-
-interface MenuOption {
-  meal: "breakfast" | "lunch" | "dinner";
-  diet: "veg" | "non-veg";
-  tier: "regular" | "mini" | "premium";
-  dishName: string;
-  basePrice: number;
-  addOns: Array<{ name: string; price: number }>;
-}
 
 export default function SingleMealPage() {
   return (
@@ -38,7 +30,7 @@ function SingleMealForm() {
 
   const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
   const [date, setDate] = useState(tomorrow);
-  const { data } = useSWR<{ options: MenuOption[] }>(`/tiffin/single-meal/menu?date=${date}`);
+  const { data } = useSWR<{ options: SingleMealOption[] }>(`/tiffin/single-meal/menu?date=${date}`);
 
   const [meal, setMeal] = useState<"breakfast" | "lunch" | "dinner">("lunch");
   const [tier, setTier] = useState<"regular" | "mini" | "premium">("regular");
@@ -129,9 +121,17 @@ function SingleMealForm() {
       )}
 
       {selected ? (
-        <div className="card p-4">
+        <div className="card overflow-hidden">
+          {assetUrl(selected.imageUrl) && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={assetUrl(selected.imageUrl)!} alt="" className="h-40 w-full object-cover" />
+          )}
+          <div className="p-4">
           <p className="font-display font-bold">{selected.dishName}</p>
-          <p className="text-sm text-muted">{rupees(selected.basePrice)} base</p>
+          <p className="text-sm text-muted">
+            {rupees(selected.basePrice)} base · <span className="capitalize">{selected.tier}</span>{" "}
+            {selected.diet}
+          </p>
           {selected.addOns.length > 0 && (
             <div className="mt-3 space-y-1.5">
               <p className="field-label">Add-ons</p>
@@ -156,6 +156,7 @@ function SingleMealForm() {
               })}
             </div>
           )}
+          </div>
         </div>
       ) : (
         <p className="text-sm text-muted">That combination isn&rsquo;t available for this date.</p>

@@ -46,15 +46,15 @@ describe("resolveCouponDiscount", () => {
 });
 
 describe("getTiffinDishForDay", () => {
-  it("returns the veg dish for a veg subscriber", () => {
-    expect(getTiffinDishForDay("lunch", "veg", 0)).toBe("Rajma Chawal");
+  it("returns the veg dish for a veg subscriber (Monday lunch)", () => {
+    expect(getTiffinDishForDay("lunch", "veg", 1)).toBe("Aloo Matar");
   });
 
-  it("applies the non-veg override on the right day", () => {
-    expect(getTiffinDishForDay("lunch", "non-veg", 0)).toBe("Chicken Curry");
+  it("applies the non-veg override on the right day (Monday dinner)", () => {
+    expect(getTiffinDishForDay("dinner", "non-veg", 1)).toBe("Fish Curry");
   });
 
-  it("falls back to the veg dish when there is no override", () => {
-    expect(getTiffinDishForDay("lunch", "non-veg", 1)).toBe("Aloo Gobhi");
+  it("falls back to the veg dish when there is no override (Tuesday dinner)", () => {
+    expect(getTiffinDishForDay("dinner", "non-veg", 2)).toBe("Lauki Masala");
   });
 });

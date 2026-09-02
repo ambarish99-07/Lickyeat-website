@@ -1,28 +1,27 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { MenuAddOnPrice, MenuItem } from "@lickyeat/shared-types";
+import type { IceLevel, MenuItem, SugarLevel } from "@lickyeat/shared-types";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Stepper, Price, cn } from "@/components/ui/misc";
-import { rupees } from "@/lib/format";
+import { rupees, assetUrl } from "@/lib/format";
 import { useCart, type CartCustomization } from "@/state/cartStore";
 import { toast } from "@/state/toastStore";
 
-const LEVELS = ["none", "less", "normal", "extra"] as const;
+const LEVELS = ["less", "regular", "extra"] as const;
 
 export function CustomizeSheet({
   item,
-  addOnCatalog,
   open,
   onClose,
 }: {
   item: MenuItem;
-  addOnCatalog: MenuAddOnPrice[];
   open: boolean;
   onClose: () => void;
 }) {
   const add = useCart((s) => s.add);
+  const hasSugarIce = item.hasSugarIceCustomization ?? true;
 
   const sizes = useMemo(
     () => [
@@ -34,51 +33,46 @@ export function CustomizeSheet({
   const firstAvailable = sizes.find((s) => s.isAvailable) ?? sizes[0]!;
 
   const [sizeLabel, setSizeLabel] = useState(firstAvailable.label);
-  const [sugar, setSugar] = useState<CartCustomization["sugar"]>(
-    item.supportsSugar ? "normal" : undefined,
-  );
-  const [ice, setIce] = useState<CartCustomization["ice"]>(item.supportsIce ? "normal" : undefined);
+  const [sugar, setSugar] = useState<SugarLevel>("regular");
+  const [ice, setIce] = useState<IceLevel>("regular");
   const [addOns, setAddOns] = useState<string[]>([]);
+  const [comment, setComment] = useState("");
   const [qty, setQty] = useState(1);
 
-  const allowed = useMemo(
-    () =>
-      item.allowedAddOns
-        .map((n) => addOnCatalog.find((a) => a.name === n))
-        .filter((a): a is MenuAddOnPrice => Boolean(a)),
-    [item.allowedAddOns, addOnCatalog],
-  );
-
+  const allowed = item.addOns ?? [];
   const size = sizes.find((s) => s.label === sizeLabel) ?? firstAvailable;
   const addOnTotal = addOns.reduce(
     (s, n) => s + (allowed.find((a) => a.name === n)?.price ?? 0),
     0,
   );
-  const saleUnit =
-    item.salePercent > 0 ? Math.round(size.price * (1 - item.salePercent / 100)) : size.price;
+  const salePct = item.salePercent ?? 0;
+  const saleUnit = salePct > 0 ? Math.round(size.price * (1 - salePct / 100)) : size.price;
   const unit = saleUnit + addOnTotal;
+  const img = assetUrl(item.imageUrl);
 
   function submit() {
     add({
       brandId: item.brandId,
       kind: "item",
       refId: item.id,
-      name: item.name,
+      signatureName: item.signatureName,
+      commonName: item.commonName,
       imageUrl: item.imageUrl,
       category: item.category,
       unitBasePrice: size.price,
-      salePercent: item.salePercent,
+      salePercent: salePct,
       unitAddOnsPrice: addOnTotal,
       quantity: qty,
       customization: {
-        sugar,
-        ice,
+        sugar: hasSugarIce ? sugar : undefined,
+        ice: hasSugarIce ? ice : undefined,
         selectedSizeLabel: size.isDefault ? undefined : size.label,
         addOns,
         comboItemIds: [],
+        comment: comment.trim() || undefined,
       },
     });
-    toast(`Added ${qty} × ${item.name}`, { tone: "success", href: "/cart", hrefLabel: "View cart" });
+    toast(`Added ${qty} × ${item.signatureName}`, { tone: "success", href: "/cart", hrefLabel: "View cart" });
     onClose();
   }
 
@@ -86,17 +80,22 @@ export function CustomizeSheet({
     <Modal
       open={open}
       onClose={onClose}
-      title={item.name}
+      title={item.signatureName}
       footer={
         <div className="flex items-center justify-between gap-4">
-          <Stepper value={qty} onChange={setQty} />
+          <Stepper value={qty} onChange={setQty} max={20} />
           <Button onClick={submit} className="flex-1">
             Add · {rupees(unit * qty)}
           </Button>
         </div>
       }
     >
-      <p className="text-sm text-muted">{item.description}</p>
+      {img && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={img} alt="" className="mb-3 h-40 w-full rounded-xl object-cover" />
+      )}
+      <p className="text-xs font-semibold text-muted">{item.commonName}</p>
+      <p className="mt-1 text-sm text-muted">{item.description}</p>
 
       {sizes.length > 1 && (
         <Group label="Size">
@@ -116,15 +115,15 @@ export function CustomizeSheet({
         </Group>
       )}
 
-      {item.supportsSugar && (
-        <Group label="Sugar">
-          <Levels value={sugar} onChange={setSugar} />
-        </Group>
-      )}
-      {item.supportsIce && (
-        <Group label="Ice">
-          <Levels value={ice} onChange={setIce} />
-        </Group>
+      {hasSugarIce && (
+        <>
+          <Group label="Sugar">
+            <Levels value={sugar} onChange={setSugar} />
+          </Group>
+          <Group label="Ice">
+            <Levels value={ice} onChange={setIce} />
+          </Group>
+        </>
       )}
 
       {allowed.length > 0 && (
@@ -134,7 +133,7 @@ export function CustomizeSheet({
               const on = addOns.includes(a.name);
               return (
                 <button
-                  key={a.id}
+                  key={a.name}
                   type="button"
                   disabled={!a.isAvailable}
                   onClick={() =>
@@ -170,9 +169,19 @@ export function CustomizeSheet({
         </Group>
       )}
 
+      <Group label="Special instructions">
+        <input
+          className="field"
+          placeholder="e.g. no straw, extra cold"
+          maxLength={200}
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+        />
+      </Group>
+
       <p className="mt-4 flex items-center justify-between text-sm">
         <span className="text-muted">Item total</span>
-        <Price value={unit} original={item.salePercent > 0 ? item.price + addOnTotal : undefined} />
+        <Price value={unit} original={salePct > 0 ? item.price + addOnTotal : undefined} />
       </p>
     </Modal>
   );
@@ -214,17 +223,17 @@ function Pill({
   );
 }
 
-function Levels({
+function Levels<T extends string>({
   value,
   onChange,
 }: {
-  value: string | undefined;
-  onChange: (v: "none" | "less" | "normal" | "extra") => void;
+  value: T;
+  onChange: (v: T) => void;
 }) {
   return (
     <div className="flex gap-2">
       {LEVELS.map((l) => (
-        <Pill key={l} active={value === l} onClick={() => onChange(l)}>
+        <Pill key={l} active={value === l} onClick={() => onChange(l as T)}>
           <span className="capitalize">{l}</span>
         </Pill>
       ))}

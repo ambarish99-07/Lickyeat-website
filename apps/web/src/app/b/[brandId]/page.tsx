@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { serverGet, serverGetOrNull } from "@/lib/serverApi";
 import type {
-  AddOnsResponse,
   BrandResponse,
   BrandStatusResponse,
   CategoriesResponse,
@@ -47,12 +46,11 @@ export default async function BrandPage({
   if (brand.status === "coming-soon") redirect(`/coming-soon/${brand.brandId}`);
   if (brand.orderingModel === "tiffin") redirect("/tiffin");
 
-  const [status, items, categories, combos, addOns] = await Promise.all([
+  const [status, items, categories, combos] = await Promise.all([
     serverGet<BrandStatusResponse>(`/brands/${brandId}/status`, { revalidate: 30 }),
     serverGet<MenuItemsResponse>(`/menu/${brandId}/items`, { revalidate: 60 }),
     serverGet<CategoriesResponse>(`/menu/${brandId}/categories`, { revalidate: 60 }),
     serverGet<CombosResponse>(`/menu/${brandId}/combos`, { revalidate: 60 }),
-    serverGet<AddOnsResponse>(`/menu/addons`, { revalidate: 60 }),
   ]);
 
   return (
@@ -63,7 +61,6 @@ export default async function BrandPage({
         items={items.items}
         categories={categories.categories}
         combos={combos.combos}
-        addOns={addOns.addOns}
         status={status.status}
       />
     </BrandTheme>

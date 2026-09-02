@@ -240,7 +240,7 @@ export default function CheckoutPage() {
           {lines.map((l) => (
             <li key={l.lineId} className="flex justify-between gap-4 text-charcoal">
               <span className="truncate">
-                {l.quantity} × {l.name}
+                {l.quantity} × {l.signatureName}
               </span>
             </li>
           ))}

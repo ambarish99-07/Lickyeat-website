@@ -92,7 +92,7 @@ function MenuItems({ brandId }: { brandId: string }) {
         <div key={i.id} className="rounded-xl border border-line p-3">
           <div className="flex flex-wrap items-center gap-3 text-sm">
             <span className={cn("w-56 font-medium", !i.isAvailable && "text-muted line-through")}>
-              {i.name}
+              {i.signatureName}
             </span>
             <span className="text-muted">{i.category}</span>
             <label className="flex items-center gap-1.5">

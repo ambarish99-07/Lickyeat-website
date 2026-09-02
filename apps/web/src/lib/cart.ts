@@ -14,6 +14,7 @@ export function cartToOrderLines(lines: CartLine[]): CreateOrderLine[] {
       selectedSizeLabel: l.customization.selectedSizeLabel,
       addOns: l.customization.addOns,
       comboItemIds: l.customization.comboItemIds,
+      comment: l.customization.comment,
     },
   }));
 }

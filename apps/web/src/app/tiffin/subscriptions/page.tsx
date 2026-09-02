@@ -55,7 +55,7 @@ function Subs() {
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="font-display font-bold capitalize">
-                  {s.duration} · {s.mealStyle} · {s.diet}
+                  {s.planName || `${s.duration} · ${s.style} · ${s.diet}`}
                 </p>
                 <p className="text-xs text-muted">
                   {formatDate(s.startDate)} – {formatDate(s.endDate)} · {rupees(s.pricePaid)}

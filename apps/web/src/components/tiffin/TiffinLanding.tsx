@@ -18,9 +18,9 @@ export function TiffinLanding({
 }) {
   const { vegOnly, setVegOnly } = useTiffinPrefs();
   const diet = vegOnly ? "veg" : "non-veg";
-  const { data } = useSWR<{ table: Array<{ meal: string; days: string[] }> }>(
-    `/tiffin/weekly-menu?diet=${diet}`,
-  );
+  const { data } = useSWR<{
+    table: Array<{ meal: string; days: Array<{ name: string; imageUrl: string | null }> }>;
+  }>(`/tiffin/weekly-menu?diet=${diet}`);
   const logo = assetUrl(brand?.logoUrl);
   const today = new Date().toISOString().slice(0, 10);
   const activeClosure = closures.find((c) => c.endDate >= today);
@@ -80,31 +80,31 @@ export function TiffinLanding({
           </label>
         </div>
 
-        <div className="overflow-x-auto rounded-2xl border border-line bg-white">
-          <table className="w-full min-w-[640px] text-sm">
-            <thead>
-              <tr className="border-b border-line text-muted">
-                <th className="p-3 text-left font-semibold"></th>
-                {DAYS.map((d) => (
-                  <th key={d} className="p-3 font-semibold">
-                    {d}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {(data?.table ?? []).map((row, ri) => (
-                <tr key={row.meal} className={cn(ri > 0 && "border-t border-line")}>
-                  <td className="p-3 font-semibold capitalize">{row.meal}</td>
-                  {row.days.map((dish, i) => (
-                    <td key={i} className="p-3 text-center text-charcoal">
-                      {dish}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="space-y-6">
+          {(data?.table ?? []).map((row) => (
+            <div key={row.meal}>
+              <p className="mb-2 font-display text-sm font-bold capitalize text-charcoal">{row.meal}</p>
+              <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
+                {row.days.map((dish, i) => {
+                  const img = assetUrl(dish.imageUrl);
+                  return (
+                    <div key={i} className="w-36 shrink-0 overflow-hidden rounded-xl border border-line bg-white">
+                      {img ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={img} alt="" className="h-20 w-full object-cover" />
+                      ) : (
+                        <div className="h-20 w-full bg-sand" />
+                      )}
+                      <div className="p-2">
+                        <p className="text-[11px] font-bold uppercase tracking-wide text-muted">{DAYS[i]}</p>
+                        <p className="mt-0.5 text-xs leading-tight text-charcoal">{dish.name}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
 
         <div className="mt-10 grid gap-6 sm:grid-cols-3">

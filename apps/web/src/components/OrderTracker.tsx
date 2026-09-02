@@ -30,7 +30,7 @@ export interface TrackableOrder {
   statusHistory: Array<{ status: string; at: string }>;
   cancellation: { refundPercent: number; refundAmount: number; reason?: string } | null;
   cancelPolicy: string;
-  items: Array<{ name: string; quantity: number; lineSubtotal: number }>;
+  items: Array<{ name: string; sub?: string; quantity: number; lineSubtotal: number }>;
   pricing?: PricingResult | null;
   createdAt: string;
 }
@@ -181,8 +181,11 @@ export function OrderTracker({
         <ul className="space-y-1.5 text-sm">
           {order.items.map((it, i) => (
             <li key={i} className="flex justify-between gap-3 text-charcoal">
-              <span className="truncate">
-                {it.quantity} × {it.name}
+              <span className="min-w-0">
+                <span className="block truncate">
+                  {it.quantity} × {it.name}
+                </span>
+                {it.sub && <span className="block truncate text-xs text-muted">{it.sub}</span>}
               </span>
               <span className="tabular-nums text-muted">{rupees(it.lineSubtotal)}</span>
             </li>

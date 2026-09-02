@@ -9,7 +9,7 @@ import { useAuth } from "@/state/authStore";
 import { api, ApiError } from "@/lib/api";
 import { cartToOrderLines } from "@/lib/cart";
 import { estimatePricing } from "@/lib/clientPricing";
-import { rupees } from "@/lib/format";
+import { rupees, assetUrl } from "@/lib/format";
 import { PriceBreakdown } from "@/components/PriceBreakdown";
 import { StoreClosedBanner } from "@/components/StoreClosedBanner";
 import { Stepper, EmptyState, Badge } from "@/components/ui/misc";
@@ -88,17 +88,25 @@ export default function CartPage() {
 
           {lines.map((l) => (
             <div key={l.lineId} className="card flex items-start gap-4 p-4">
+              {assetUrl(l.imageUrl) && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={assetUrl(l.imageUrl)!} alt="" className="h-16 w-16 shrink-0 rounded-xl object-cover" />
+              )}
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <p className="font-semibold">{l.name}</p>
+                  <p className="font-semibold">{l.signatureName}</p>
                   {l.kind === "combo" && <Badge tone="good">Combo</Badge>}
                 </div>
+                {l.commonName && l.commonName !== l.signatureName && (
+                  <p className="text-xs text-muted">{l.commonName}</p>
+                )}
                 <p className="mt-0.5 text-xs text-muted">
                   {[
                     l.customization.selectedSizeLabel,
                     l.customization.sugar && `sugar: ${l.customization.sugar}`,
                     l.customization.ice && `ice: ${l.customization.ice}`,
                     l.customization.addOns.length > 0 && `+ ${l.customization.addOns.join(", ")}`,
+                    l.customization.comment && `“${l.customization.comment}”`,
                   ]
                     .filter(Boolean)
                     .join(" · ") || "No customisation"}

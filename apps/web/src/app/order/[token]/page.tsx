@@ -46,7 +46,12 @@ export default function OrderTrackPage({ params }: { params: Promise<{ token: st
         }
       : null,
     cancelPolicy: policyText(o),
-    items: o.lines.map((l) => ({ name: l.name, quantity: l.quantity, lineSubtotal: l.lineSubtotal })),
+    items: o.lines.map((l) => ({
+      name: l.signatureName || l.name,
+      sub: l.commonName && l.commonName !== l.signatureName ? l.commonName : undefined,
+      quantity: l.quantity,
+      lineSubtotal: l.lineSubtotal,
+    })),
     pricing: o.pricing,
     createdAt: o.createdAt,
   };

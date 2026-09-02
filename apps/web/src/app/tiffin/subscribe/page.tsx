@@ -1,19 +1,31 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import type { Address, TiffinSubscription } from "@lickyeat/shared-types";
+import { useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
+import useSWR from "swr";
+import type { Address, TiffinPlan, TiffinSubscription } from "@lickyeat/shared-types";
 import { RequireAuth } from "@/components/RequireAuth";
 import { TiffinShell } from "@/components/tiffin/TiffinShell";
 import { api, ApiError } from "@/lib/api";
+import { rupees, assetUrl } from "@/lib/format";
 import { Field, Input, SegmentedControl } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
+import { cn } from "@/components/ui/misc";
+
+const STYLE_LABEL: Record<string, string> = {
+  single: "One meal a day",
+  "twice-daily": "Lunch & dinner",
+  "thrice-daily": "All three meals",
+};
 
 export default function SubscribePage() {
   return (
     <RequireAuth>
-      <TiffinShell title="Build your tiffin plan">
-        <SubscribeForm />
+      <TiffinShell title="Choose your tiffin plan">
+        <Suspense>
+          <SubscribeForm />
+        </Suspense>
       </TiffinShell>
     </RequireAuth>
   );
@@ -21,9 +33,14 @@ export default function SubscribePage() {
 
 function SubscribeForm() {
   const router = useRouter();
+  const preselect = useSearchParams().get("plan");
+  const { data } = useSWR<{ plans: TiffinPlan[] }>("/tiffin/plans");
+  const plans = data?.plans ?? [];
+
   const [diet, setDiet] = useState<"veg" | "non-veg">("veg");
-  const [mealStyle, setMealStyle] = useState<"single" | "twice" | "thrice">("single");
   const [duration, setDuration] = useState<"weekly" | "monthly">("monthly");
+  const [planId, setPlanId] = useState<string | null>(preselect);
+  const [mealType, setMealType] = useState<"breakfast" | "lunch" | "dinner">("lunch");
   const [startDate, setStartDate] = useState(
     new Date(Date.now() + 86400000).toISOString().slice(0, 10),
   );
@@ -39,14 +56,20 @@ function SubscribeForm() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
+  const visible = useMemo(
+    () => plans.filter((p) => p.diet === diet && p.duration === duration),
+    [plans, diet, duration],
+  );
+  const selected = plans.find((p) => p.id === planId) ?? null;
+
   async function subscribe() {
+    if (!selected) return;
     setBusy(true);
     setError("");
     try {
       const res = await api.post<{ subscription: TiffinSubscription }>("/tiffin/subscriptions", {
-        diet,
-        mealStyle,
-        duration,
+        planId: selected.id,
+        mealType: selected.style === "single" ? mealType : undefined,
         startDate,
         address,
         paymentMethod: method,
@@ -59,9 +82,13 @@ function SubscribeForm() {
     }
   }
 
+  function charged(p: TiffinPlan) {
+    return p.salePercent ? Math.round(p.price * (1 - p.salePercent / 100)) : p.price;
+  }
+
   return (
-    <div className="max-w-lg space-y-6">
-      <Field label="Diet">
+    <div className="max-w-xl space-y-6">
+      <div className="flex flex-wrap gap-3">
         <SegmentedControl
           value={diet}
           onChange={setDiet}
@@ -70,28 +97,61 @@ function SubscribeForm() {
             { value: "non-veg", label: "Non-veg" },
           ]}
         />
-      </Field>
-      <Field label="Meals per day">
-        <SegmentedControl
-          value={mealStyle}
-          onChange={setMealStyle}
-          options={[
-            { value: "single", label: "One (lunch)" },
-            { value: "twice", label: "Two" },
-            { value: "thrice", label: "Three" },
-          ]}
-        />
-      </Field>
-      <Field label="Plan length">
         <SegmentedControl
           value={duration}
           onChange={setDuration}
           options={[
-            { value: "weekly", label: "Weekly · 7 days" },
-            { value: "monthly", label: "Monthly · 30 days" },
+            { value: "weekly", label: "Weekly" },
+            { value: "monthly", label: "Monthly" },
           ]}
         />
-      </Field>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        {visible.map((p) => {
+          const img = assetUrl(p.imageUrl);
+          return (
+            <button
+              key={p.id}
+              onClick={() => setPlanId(p.id)}
+              className={cn(
+                "card overflow-hidden p-0 text-left transition",
+                planId === p.id ? "ring-2 ring-brand" : "hover:shadow-lift",
+              )}
+            >
+              {img && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={img} alt="" className="h-24 w-full object-cover" />
+              )}
+              <div className="p-3">
+                <p className="text-sm font-bold">{STYLE_LABEL[p.style]}</p>
+                <p className="mt-0.5 text-xs text-muted">
+                  {p.durationDays} delivery days
+                </p>
+                <p className="mt-1.5 font-display font-extrabold">
+                  {rupees(charged(p))}
+                  {p.salePercent && (
+                    <span className="ml-1 text-xs font-normal text-muted line-through">
+                      {rupees(p.price)}
+                    </span>
+                  )}
+                </p>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {selected?.style === "single" && (
+        <Field label="Which meal each day?">
+          <SegmentedControl
+            value={mealType}
+            onChange={setMealType}
+            options={(["breakfast", "lunch", "dinner"] as const).map((m) => ({ value: m, label: m }))}
+          />
+        </Field>
+      )}
+
       <Field label="Start date">
         <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
       </Field>
@@ -117,12 +177,21 @@ function SubscribeForm() {
       </Field>
 
       <p className="text-xs text-muted">
-        Weekly plans can&rsquo;t be cancelled once started. Monthly plans: full refund if cancelled
-        within the first 15 days.
+        Weekly plans run their course. Monthly plans: 50% refund if cancelled within the first 15
+        days. Pause the plan or skip individual days anytime.
       </p>
       {error && <p className="text-sm text-rose-600">{error}</p>}
-      <Button className="w-full" size="lg" onClick={subscribe} disabled={busy || !address.line1}>
-        {busy ? "Creating…" : "Create subscription"}
+      <Button
+        className="w-full"
+        size="lg"
+        onClick={subscribe}
+        disabled={busy || !selected || !address.line1}
+      >
+        {busy
+          ? "Creating…"
+          : selected
+            ? `Subscribe · ${rupees(charged(selected))}`
+            : "Pick a plan"}
       </Button>
     </div>
   );

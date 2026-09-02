@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import type { Brand, MenuAddOnPrice, MenuItem, StoreStatus } from "@lickyeat/shared-types";
+import type { Brand, MenuItem, StoreStatus } from "@lickyeat/shared-types";
+import { categoryLabel } from "@lickyeat/shared-types";
 import type { ComboWithLive } from "@/lib/apiTypes";
 import { MenuItemCard } from "./MenuItemCard";
 import { ComboCard } from "./ComboCard";
@@ -16,14 +17,12 @@ export function BrandMenu({
   items,
   categories,
   combos,
-  addOns,
   status,
 }: {
   brand: Brand;
   items: MenuItem[];
   categories: string[];
   combos: ComboWithLive[];
-  addOns: MenuAddOnPrice[];
   status: StoreStatus;
 }) {
   const cartCount = useCart((s) => s.lines.reduce((n, l) => n + l.quantity, 0));
@@ -74,7 +73,7 @@ export function BrandMenu({
                   activeSlug === slug(c) ? "bg-brand text-brand-ink" : "text-charcoal hover:bg-ink/5",
                 )}
               >
-                {c}
+                {categoryLabel(c)}
               </a>
             ))}
           </div>
@@ -101,12 +100,12 @@ export function BrandMenu({
           }}
           className="mb-10 scroll-mt-32"
         >
-          <h2 className="mb-4 font-display text-xl font-extrabold">{cat}</h2>
+          <h2 className="mb-4 font-display text-xl font-extrabold">{categoryLabel(cat)}</h2>
           <div className="grid gap-4 lg:grid-cols-2">
             {items
               .filter((i) => i.category === cat)
               .map((item) => (
-                <MenuItemCard key={item.id} item={item} addOnCatalog={addOns} />
+                <MenuItemCard key={item.id} item={item} />
               ))}
           </div>
         </section>

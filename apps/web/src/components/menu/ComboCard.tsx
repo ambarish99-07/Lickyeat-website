@@ -6,7 +6,7 @@ import type { ComboWithLive } from "@/lib/apiTypes";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Price, cn } from "@/components/ui/misc";
-import { rupees } from "@/lib/format";
+import { rupees, assetUrl } from "@/lib/format";
 import { useCart } from "@/state/cartStore";
 import { toast } from "@/state/toastStore";
 
@@ -15,21 +15,34 @@ export function ComboCard({ combo }: { combo: ComboWithLive }) {
   const [open, setOpen] = useState(false);
   const [picked, setPicked] = useState<string[]>([]);
   const sold = !combo.orderable;
+  const savePct = combo.discountPercent ?? 15;
 
   const pickedEstimate = useMemo(() => {
     if (picked.length === 0) return combo.livePrice;
     const prices = picked
       .map((id) => combo.constituents.find((c) => c.id === id)?.price ?? 0)
       .filter(Boolean);
-    return computeComboPrice(prices);
-  }, [picked, combo]);
+    return computeComboPrice(prices, savePct);
+  }, [picked, combo, savePct]);
 
   function addToCart(comboItemIds: string[], estimate: number) {
     add({
       brandId: combo.brandId,
       kind: "combo",
       refId: combo.id,
-      name: combo.name,
+      signatureName: combo.name,
+      commonName:
+        comboItemIds.length > 0
+          ? comboItemIds
+              .map((id) => combo.constituents.find((c) => c.id === id)?.signatureName)
+              .filter(Boolean)
+              .join(" + ")
+          : combo.type === "curated"
+            ? combo.itemIds
+                .map((id) => combo.constituents.find((c) => c.id === id)?.signatureName)
+                .filter(Boolean)
+                .join(" + ")
+            : `Any ${combo.chooseCount}`,
       imageUrl: combo.imageUrl,
       category: "combo",
       unitBasePrice: estimate,
@@ -40,34 +53,39 @@ export function ComboCard({ combo }: { combo: ComboWithLive }) {
     toast(`Added ${combo.name}`, { tone: "success", href: "/cart", hrefLabel: "View cart" });
   }
 
+  const img = assetUrl(combo.imageUrl);
+
   return (
     <>
-      <article className={cn("card flex flex-col p-5", sold && "opacity-60")}>
-        <div className="flex items-start justify-between gap-2">
-          <h3 className={cn("font-display font-bold", sold && "line-through")}>{combo.name}</h3>
-          <span className="chip bg-emerald-100 text-emerald-800">Save 15%</span>
-        </div>
-        <p className="mt-1 flex-1 text-sm text-muted">{combo.description}</p>
-        <div className="mt-4 flex items-center justify-between">
-          <Price value={combo.livePrice} className="text-[15px]" />
-          {sold ? (
-            <span className="text-xs font-bold uppercase text-muted">Unavailable</span>
-          ) : combo.type === "curated" ? (
-            <button
-              className="btn-primary btn-sm"
-              onClick={() => addToCart([], combo.livePrice)}
-            >
-              Add
-            </button>
-          ) : (
-            <button className="btn-ghost btn-sm" onClick={() => setOpen(true)}>
-              Choose {combo.chooseCount}
-            </button>
-          )}
+      <article className={cn("card flex flex-col overflow-hidden", sold && "opacity-60")}>
+        {img && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={img} alt="" className={cn("h-32 w-full object-cover", sold && "grayscale")} />
+        )}
+        <div className="flex flex-1 flex-col p-4">
+          <div className="flex items-start justify-between gap-2">
+            <h3 className={cn("font-display font-bold", sold && "line-through")}>{combo.name}</h3>
+            <span className="chip bg-emerald-100 text-emerald-800">Save {savePct}%</span>
+          </div>
+          <p className="mt-1 flex-1 text-sm text-muted">{combo.description}</p>
+          <div className="mt-4 flex items-center justify-between">
+            <Price value={combo.livePrice} className="text-[15px]" />
+            {sold ? (
+              <span className="text-xs font-bold uppercase text-muted">Unavailable</span>
+            ) : combo.type === "curated" ? (
+              <button className="btn-primary btn-sm" onClick={() => addToCart([], combo.livePrice)}>
+                Add
+              </button>
+            ) : (
+              <button className="btn-ghost btn-sm" onClick={() => setOpen(true)}>
+                Choose {combo.chooseCount}
+              </button>
+            )}
+          </div>
         </div>
       </article>
 
-      {combo.type === "choose-your-own" && (
+      {combo.type === "choose-n" && (
         <Modal
           open={open}
           onClose={() => setOpen(false)}
@@ -111,7 +129,10 @@ export function ComboCard({ combo }: { combo: ComboWithLive }) {
                     !c.isAvailable && "line-through",
                   )}
                 >
-                  <span>{c.name}</span>
+                  <span>
+                    {c.signatureName}{" "}
+                    <span className="text-muted">· {c.commonName}</span>
+                  </span>
                   <span className="text-muted">{rupees(c.price)}</span>
                 </button>
               );
