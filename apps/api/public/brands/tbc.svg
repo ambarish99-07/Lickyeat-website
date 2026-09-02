@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="The Blenders Club">
+  <defs>
+    <linearGradient id="tbc" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7b2ff7"/>
+      <stop offset="1" stop-color="#f357a8"/>
+    </linearGradient>
+  </defs>
+  <rect width="120" height="120" rx="28" fill="url(#tbc)"/>
+  <path d="M40 30h40l-6 30a14 14 0 0 1-28 0z" fill="#fff" opacity="0.95"/>
+  <path d="M46 66h28l-3 18a11 11 0 0 1-22 0z" fill="#fff" opacity="0.7"/>
+  <circle cx="60" cy="44" r="5" fill="#7b2ff7"/>
+  <rect x="52" y="92" width="16" height="6" rx="3" fill="#fff"/>
+</svg>

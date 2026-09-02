@@ -11,10 +11,24 @@ import { ComboModel } from "../../db/models/Combo.model.js";
 import { notFound } from "../../lib/errors.js";
 import { serialize } from "../../lib/serialize.js";
 
-export async function listMenuItems(brandId: string, opts: { includeUnavailable?: boolean } = {}) {
+/**
+ * The public menu returns EVERY item for the brand — including out-of-stock
+ * ones. The convention across this app is to show an unavailable item (or size
+ * variant, or add-on) struck through / disabled, never hidden, so the customer
+ * knows it exists and is just temporarily unorderable. Availability is still
+ * enforced server-side at order time (priceResolver.ts). `opts` is retained for
+ * callers that genuinely want only orderable items.
+ */
+export async function listMenuItems(
+  brandId: string,
+  opts: { onlyAvailable?: boolean } = {},
+) {
   const filter: Record<string, unknown> = { brandId };
-  if (!opts.includeUnavailable) filter.isAvailable = true;
-  const items = await MenuItemModel.find(filter).sort({ category: 1, name: 1 }).lean();
+  if (opts.onlyAvailable) filter.isAvailable = true;
+  const items = await MenuItemModel.find(filter)
+    .collation({ locale: "en" })
+    .sort({ category: 1, isAvailable: -1, name: 1 })
+    .lean();
   return items.map((i) => serialize(i));
 }
 
@@ -24,19 +38,33 @@ export async function getMenuItem(id: string) {
   return serialize(item);
 }
 
+/** Categories in a stable, curated order (falls back to alpha for unknown ones). */
 export async function listCategories(brandId: string) {
-  return MenuItemModel.distinct("category", { brandId, isAvailable: true });
+  const items = await MenuItemModel.find({ brandId }).select("category").lean();
+  const seen = new Set<string>();
+  const ordered: string[] = [];
+  for (const it of items) {
+    if (it.category && !seen.has(it.category)) {
+      seen.add(it.category);
+      ordered.push(it.category);
+    }
+  }
+  return ordered.sort((a, b) => a.localeCompare(b));
 }
 
-export async function listAddOns(opts: { includeUnavailable?: boolean } = {}) {
-  const filter = opts.includeUnavailable ? {} : { isAvailable: true };
-  const addOns = await MenuAddOnModel.find(filter).sort({ name: 1 }).lean();
+/** The shared add-on catalog — always returns every entry (disabled ones included). */
+export async function listAddOns(opts: { onlyAvailable?: boolean } = {}) {
+  const filter = opts.onlyAvailable ? { isAvailable: true } : {};
+  const addOns = await MenuAddOnModel.find(filter)
+    .collation({ locale: "en" })
+    .sort({ isAvailable: -1, name: 1 })
+    .lean();
   return addOns.map((a) => serialize(a));
 }
 
 /** Combos with a freshly-computed live price (never a stored bundle price). */
 export async function listCombos(brandId: string) {
-  const combos = await ComboModel.find({ brandId, isAvailable: true }).lean();
+  const combos = await ComboModel.find({ brandId }).sort({ isAvailable: -1, name: 1 }).lean();
   const out = [];
   for (const combo of combos) {
     const ids =
@@ -49,9 +77,11 @@ export async function listCombos(brandId: string) {
         : computeComboPrice(
             [...basePrices].sort((a, b) => a - b).slice(0, combo.chooseCount ?? basePrices.length),
           );
+    const allConstituentsAvailable = items.every((i) => i.isAvailable ?? true);
     out.push({
       ...serialize<Record<string, unknown>>(combo),
       livePrice,
+      orderable: (combo.isAvailable ?? true) && allConstituentsAvailable,
       constituents: items.map((i) => serialize(i)),
     });
   }

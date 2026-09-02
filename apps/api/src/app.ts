@@ -1,6 +1,10 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import express, { type Express } from "express";
 import cors from "cors";
 import { env } from "./config/env.js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 import { errorHandler, notFoundHandler } from "./middleware/error.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
 import { brandsRouter } from "./modules/brands/brands.routes.js";
@@ -24,6 +28,16 @@ export function createApp(): Express {
     }),
   );
   app.use(express.json({ limit: "1mb" }));
+
+  // Brand logos and other static assets. Served under /static so the web app can
+  // reach them through its own /api proxy (<img src="/api/static/brands/…">).
+  app.use(
+    "/static",
+    express.static(path.resolve(__dirname, "../public"), {
+      maxAge: env.isProd ? "7d" : 0,
+      fallthrough: false,
+    }),
+  );
 
   app.get("/health", (_req, res) => {
     res.json({ ok: true, env: env.nodeEnv });
