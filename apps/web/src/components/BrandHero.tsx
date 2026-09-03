@@ -17,8 +17,15 @@ export function BrandHero({ brand }: { brand: Brand }) {
     <section className="relative overflow-hidden bg-brand text-brand-ink">
       {hero && (
         <div className="mx-auto max-w-[1600px]">
+          {/* Every brand hero is authored 1600×600 (8:3); object-cover keeps the
+              band identical even if a future upload isn't exactly that. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={hero} alt="" className="block h-auto w-full" />
+          <img
+            src={hero}
+            alt=""
+            className="block w-full object-cover object-center"
+            style={{ aspectRatio: "8 / 3" }}
+          />
         </div>
       )}
 
