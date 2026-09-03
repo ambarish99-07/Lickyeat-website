@@ -19,6 +19,7 @@ import { accountRouter } from "./modules/account/account.routes.js";
 import { adminRouter } from "./modules/admin/admin.routes.js";
 import { blogRouter } from "./modules/blog/blog.routes.js";
 import { leadsRouter } from "./modules/leads/leads.routes.js";
+import { paymentsRouter } from "./modules/payments/payments.routes.js";
 
 export function createApp(): Express {
   const app = express();
@@ -58,6 +59,7 @@ export function createApp(): Express {
   app.use("/admin", adminRouter);
   app.use("/blog", blogRouter);
   app.use("/leads", leadsRouter);
+  app.use("/payments", paymentsRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

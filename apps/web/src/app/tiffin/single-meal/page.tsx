@@ -3,12 +3,13 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import useSWR from "swr";
-import type { Address, TiffinSingleMealOrder } from "@lickyeat/shared-types";
+import type { Address, CreateTiffinSingleMealResponse } from "@lickyeat/shared-types";
 import { MAX_SINGLE_MEAL_QUANTITY } from "@lickyeat/shared-types";
 import { TiffinShell } from "@/components/tiffin/TiffinShell";
 import { useAuth } from "@/state/authStore";
 import { useTiffinPrefs } from "@/state/tiffinPreferencesStore";
 import { api, ApiError } from "@/lib/api";
+import { payWithRazorpay, RazorpayCancelled } from "@/lib/razorpay";
 import { rupees, assetUrl } from "@/lib/format";
 import type { SingleMealOption } from "@/lib/apiTypes";
 import { Field, Input, SegmentedControl } from "@/components/ui/Field";
@@ -68,7 +69,7 @@ function SingleMealForm() {
     setBusy(true);
     setError("");
     try {
-      const res = await api.post<{ order: TiffinSingleMealOrder }>("/tiffin/single-meal/orders", {
+      const res = await api.post<CreateTiffinSingleMealResponse>("/tiffin/single-meal/orders", {
         diet: effDiet,
         tier,
         meal,
@@ -80,9 +81,29 @@ function SingleMealForm() {
         guestName: user ? undefined : guestName,
         guestPhone: user ? undefined : guestPhone,
       });
+
+      if (res.razorpayOrder) {
+        const rp = await payWithRazorpay({
+          order: res.razorpayOrder,
+          description: `GG Tiffin · ${res.order.dishName} (${res.order.code})`,
+          prefill: {
+            name: (user?.name ?? guestName) || undefined,
+            contact: (user?.phone ?? guestPhone) || undefined,
+          },
+        });
+        await api.post("/tiffin/single-meal/orders/verify-payment", {
+          orderId: res.order.id,
+          ...rp,
+        });
+      }
+
       router.push(`/tiffin/track/${res.order.accessToken}`);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Could not place the order.");
+      if (e instanceof RazorpayCancelled) {
+        setError("Payment cancelled — your order is saved, open it from your orders to pay again.");
+      } else {
+        setError(e instanceof ApiError ? e.message : e instanceof Error ? e.message : "Could not place the order.");
+      }
     } finally {
       setBusy(false);
     }

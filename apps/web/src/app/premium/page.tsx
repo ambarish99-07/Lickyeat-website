@@ -1,13 +1,18 @@
 "use client";
 
 import useSWR from "swr";
-import type { PremiumMembership, PremiumMembershipStatus } from "@lickyeat/shared-types";
+import type {
+  PremiumMembership,
+  PremiumMembershipStatus,
+  RazorpayOrderInfo,
+} from "@lickyeat/shared-types";
 import {
   PREMIUM_MEMBERSHIP_DAYS,
   PREMIUM_MEMBERSHIP_PRICE,
 } from "@lickyeat/shared-types";
 import { useAuth } from "@/state/authStore";
 import { api, ApiError } from "@/lib/api";
+import { payWithRazorpay, RazorpayCancelled } from "@/lib/razorpay";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { formatDate } from "@/lib/format";
 import { toast } from "@/state/toastStore";
@@ -21,20 +26,29 @@ export default function PremiumPage() {
 
   async function buy() {
     try {
-      const res = await api.post<{ membership: PremiumMembership; razorpayOrder: { id: string } }>(
-        "/premium-membership/purchase",
-        {},
-      );
+      const res = await api.post<{
+        membership: PremiumMembership;
+        razorpayOrder: RazorpayOrderInfo;
+      }>("/premium-membership/purchase", {});
+      const rp = await payWithRazorpay({
+        order: res.razorpayOrder,
+        description: `Lickyeat Premium · ${PREMIUM_MEMBERSHIP_DAYS} days`,
+        prefill: { name: user?.name, email: user?.email ?? undefined, contact: user?.phone ?? undefined },
+      });
       await api.post("/premium-membership/verify", {
         membershipId: res.membership.id,
-        razorpayOrderId: res.razorpayOrder.id,
-        razorpayPaymentId: `pay_sim_${Date.now()}`,
-        razorpaySignature: "dev-ok",
+        ...rp,
       });
       mutate();
       toast("Premium is active — free delivery on everything!", { tone: "success" });
     } catch (e) {
-      toast(e instanceof ApiError ? e.message : "Purchase failed", { tone: "error" });
+      if (e instanceof RazorpayCancelled) {
+        toast("Payment cancelled", { tone: "default" });
+      } else {
+        toast(e instanceof ApiError ? e.message : e instanceof Error ? e.message : "Purchase failed", {
+          tone: "error",
+        });
+      }
     }
   }
 

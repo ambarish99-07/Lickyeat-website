@@ -6,6 +6,7 @@ import { badRequest, notFound } from "../../lib/errors.js";
 import { accessToken, orderCode } from "../../lib/ids.js";
 import { serialize } from "../../lib/serialize.js";
 import { sendWhatsAppOrderUpdate } from "../../integrations/whatsapp.js";
+import { createRazorpayOrder, verifyRazorpaySignature } from "../payments/razorpay.js";
 import { isWithinDeliveryZone } from "../orders/deliveryZone.js";
 import { pickDeliveryPartner } from "../orders/deliveryPartner.js";
 import { getActiveClosures } from "./tiffin.service.js";
@@ -98,6 +99,40 @@ export async function createSingleMealOrder(
     },
   });
 
+  let razorpayOrder = null;
+  if (input.paymentMethod === "razorpay") {
+    const rzp = await createRazorpayOrder(total, `ggt_${order._id}`);
+    order.payment!.razorpay!.orderId = rzp.id;
+    await order.save();
+    razorpayOrder = { id: rzp.id, amount: rzp.amount, currency: rzp.currency, keyId: rzp.keyId };
+  }
+
+  return { order: serialize(order.toObject()), razorpayOrder };
+}
+
+export async function verifySingleMealPayment(params: {
+  orderId: string;
+  razorpayOrderId: string;
+  razorpayPaymentId: string;
+  razorpaySignature: string;
+}) {
+  const order = await TiffinSingleMealOrderModel.findById(params.orderId);
+  if (!order) throw notFound("Order not found");
+  const payment = order.payment!;
+  if (payment.method !== "razorpay") throw badRequest("This order is not an online-payment order.");
+  if (payment.razorpay!.orderId !== params.razorpayOrderId) {
+    throw badRequest("Razorpay order id mismatch.");
+  }
+  if (!verifyRazorpaySignature(params)) {
+    payment.status = "failed";
+    await order.save();
+    throw badRequest("Payment signature verification failed.");
+  }
+  payment.status = "paid";
+  payment.razorpay!.paymentId = params.razorpayPaymentId;
+  payment.razorpay!.signature = params.razorpaySignature;
+  await order.save();
+  void sendWhatsAppOrderUpdate(order.contactPhone, `GG Tiffin: payment received for ${order.code}.`);
   return serialize(order.toObject());
 }
 

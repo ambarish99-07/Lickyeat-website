@@ -8,9 +8,12 @@ import type {
   Order,
   PricingResult,
 } from "@lickyeat/shared-types";
+import useSWR from "swr";
 import { useCart } from "@/state/cartStore";
 import { useAuth } from "@/state/authStore";
 import { api, ApiError } from "@/lib/api";
+import type { PaymentsConfigResponse } from "@/lib/apiTypes";
+import { payWithRazorpay, RazorpayCancelled } from "@/lib/razorpay";
 import { cartToOrderLines } from "@/lib/cart";
 import { rupees } from "@/lib/format";
 import { PriceBreakdown } from "@/components/PriceBreakdown";
@@ -47,6 +50,7 @@ export default function CheckoutPage() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [pending, setPending] = useState<CreateOrderResponse | null>(null);
+  const { data: payConfig } = useSWR<PaymentsConfigResponse>("/payments/config");
 
   useEffect(() => {
     if (lines.length === 0) return;
@@ -109,16 +113,26 @@ export default function CheckoutPage() {
     setBusy(true);
     setError("");
     try {
+      const rp = await payWithRazorpay({
+        order: pending.razorpayOrder,
+        description: `Lickyeat order ${pending.order.code}`,
+        prefill: {
+          name: (user?.name ?? guestName) || undefined,
+          contact: guestPhone || undefined,
+        },
+      });
       const verified = await api.post<{ order: Order }>("/orders/verify-payment", {
         orderId: pending.order.id,
-        razorpayOrderId: pending.razorpayOrder.id,
-        razorpayPaymentId: `pay_sim_${Date.now()}`,
-        razorpaySignature: "dev-ok",
+        ...rp,
       });
       clear();
       router.push(`/order/${verified.order.accessToken}`);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Payment failed.");
+      if (e instanceof RazorpayCancelled) {
+        setError("Payment cancelled — your order is saved, you can pay again.");
+      } else {
+        setError(e instanceof ApiError ? e.message : e instanceof Error ? e.message : "Payment failed.");
+      }
     } finally {
       setBusy(false);
     }
@@ -214,7 +228,10 @@ export default function CheckoutPage() {
               <span>
                 {m === "cod" ? "Cash on delivery" : "Pay online"}
                 <span className="ml-1 text-xs text-muted">
-                  {m === "razorpay" && "· Razorpay (simulated in this demo)"}
+                  {m === "razorpay" &&
+                    (payConfig?.razorpay
+                      ? "· Card / UPI / netbanking via Razorpay"
+                      : "· Razorpay (simulated — no keys configured)")}
                 </span>
               </span>
             </label>
@@ -225,7 +242,7 @@ export default function CheckoutPage() {
 
         {pending ? (
           <Button onClick={payNow} disabled={busy} size="lg">
-            Simulate payment · {rupees(pricing?.total ?? 0)}
+            {busy ? "Opening payment…" : `Pay ${rupees(pricing?.total ?? 0)}`}
           </Button>
         ) : (
           <Button onClick={placeOrder} disabled={busy || closed} size="lg">

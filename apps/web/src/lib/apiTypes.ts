@@ -8,6 +8,7 @@ import type {
   MenuAddOnPrice,
   MenuItem,
   Order,
+  PaymentsConfig,
   PremiumMembershipStatus,
   PricingResult,
   ReorderResult,
@@ -82,6 +83,7 @@ export interface OrdersResponse {
 export interface ReorderResponse {
   reorder: ReorderResult;
 }
+export type PaymentsConfigResponse = PaymentsConfig;
 export interface TiffinSingleMealOrdersResponse {
   orders: TiffinSingleMealOrder[];
 }

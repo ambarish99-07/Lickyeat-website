@@ -2,6 +2,7 @@ import { z } from "zod";
 import { ObjectIdSchema, RupeesSchema } from "./common.js";
 import { AddressSchema } from "./auth.js";
 import { PaymentMethodSchema, PaymentStatusSchema, RazorpayRefsSchema } from "./order.js";
+import { RazorpayOrderInfoSchema } from "./payment.js";
 
 /** GG Tiffin is a structurally separate order universe — it never touches Order. */
 export const GG_TIFFIN_BRAND_ID = "gg-tiffin" as const;
@@ -211,6 +212,15 @@ export type CreateTiffinSubscriptionRequest = z.infer<
   typeof CreateTiffinSubscriptionRequestSchema
 >;
 
+export const CreateTiffinSubscriptionResponseSchema = z.object({
+  subscription: TiffinSubscriptionSchema,
+  /** present only when paymentMethod === "razorpay". */
+  razorpayOrder: RazorpayOrderInfoSchema.nullable(),
+});
+export type CreateTiffinSubscriptionResponse = z.infer<
+  typeof CreateTiffinSubscriptionResponseSchema
+>;
+
 // ---------------------------------------------------------------------------
 // Single-meal order (no subscription)
 // ---------------------------------------------------------------------------
@@ -267,6 +277,15 @@ export const CreateTiffinSingleMealRequestSchema = z.object({
 });
 export type CreateTiffinSingleMealRequest = z.infer<
   typeof CreateTiffinSingleMealRequestSchema
+>;
+
+export const CreateTiffinSingleMealResponseSchema = z.object({
+  order: TiffinSingleMealOrderSchema,
+  /** present only when paymentMethod === "razorpay". */
+  razorpayOrder: RazorpayOrderInfoSchema.nullable(),
+});
+export type CreateTiffinSingleMealResponse = z.infer<
+  typeof CreateTiffinSingleMealResponseSchema
 >;
 
 // ---------------------------------------------------------------------------

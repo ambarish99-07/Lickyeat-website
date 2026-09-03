@@ -5,6 +5,7 @@ import {
   CreateTiffinSingleMealRequestSchema,
   CreateTiffinSubscriptionRequestSchema,
   GG_TIFFIN_BRAND_ID,
+  RazorpayVerifyFieldsSchema,
   getTiffinDishForDay,
 } from "@lickyeat/shared-types";
 import { asyncHandler, parse, param } from "../../lib/http.js";
@@ -72,7 +73,18 @@ tiffinRouter.post(
   requireAuth,
   asyncHandler(async (req, res) => {
     const body = parse(CreateTiffinSubscriptionRequestSchema, req.body);
-    res.status(201).json({ subscription: await subs.createSubscription(req.user!.id, body) });
+    res.status(201).json(await subs.createSubscription(req.user!.id, body));
+  }),
+);
+
+tiffinRouter.post(
+  "/subscriptions/:id/verify-payment",
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const body = parse(RazorpayVerifyFieldsSchema, req.body);
+    res.json({
+      subscription: await subs.verifySubscriptionPayment(req.user!.id, param(req, "id"), body),
+    });
   }),
 );
 
@@ -135,7 +147,19 @@ tiffinRouter.post(
   optionalAuth,
   asyncHandler(async (req, res) => {
     const body = parse(CreateTiffinSingleMealRequestSchema, req.body);
-    res.status(201).json({ order: await single.createSingleMealOrder(body, req.user) });
+    res.status(201).json(await single.createSingleMealOrder(body, req.user));
+  }),
+);
+
+tiffinRouter.post(
+  "/single-meal/orders/verify-payment",
+  optionalAuth,
+  asyncHandler(async (req, res) => {
+    const body = parse(
+      RazorpayVerifyFieldsSchema.extend({ orderId: z.string() }),
+      req.body,
+    );
+    res.json({ order: await single.verifySingleMealPayment(body) });
   }),
 );
 

@@ -4,10 +4,16 @@ import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import useSWR from "swr";
-import type { Address, TiffinPlan, TiffinSubscription } from "@lickyeat/shared-types";
+import type {
+  Address,
+  CreateTiffinSubscriptionResponse,
+  TiffinPlan,
+} from "@lickyeat/shared-types";
 import { RequireAuth } from "@/components/RequireAuth";
 import { TiffinShell } from "@/components/tiffin/TiffinShell";
 import { api, ApiError } from "@/lib/api";
+import { payWithRazorpay, RazorpayCancelled } from "@/lib/razorpay";
+import { useAuth } from "@/state/authStore";
 import { rupees, assetUrl } from "@/lib/format";
 import { Field, Input, SegmentedControl } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
@@ -33,6 +39,7 @@ export default function SubscribePage() {
 
 function SubscribeForm() {
   const router = useRouter();
+  const { user } = useAuth();
   const preselect = useSearchParams().get("plan");
   const { data } = useSWR<{ plans: TiffinPlan[] }>("/tiffin/plans");
   const plans = data?.plans ?? [];
@@ -67,16 +74,30 @@ function SubscribeForm() {
     setBusy(true);
     setError("");
     try {
-      const res = await api.post<{ subscription: TiffinSubscription }>("/tiffin/subscriptions", {
+      const res = await api.post<CreateTiffinSubscriptionResponse>("/tiffin/subscriptions", {
         planId: selected.id,
         mealType: selected.style === "single" ? mealType : undefined,
         startDate,
         address,
         paymentMethod: method,
       });
+
+      if (res.razorpayOrder) {
+        const rp = await payWithRazorpay({
+          order: res.razorpayOrder,
+          description: `GG Tiffin · ${res.subscription.planName}`,
+          prefill: { name: user?.name, email: user?.email ?? undefined, contact: user?.phone ?? undefined },
+        });
+        await api.post(`/tiffin/subscriptions/${res.subscription.id}/verify-payment`, rp);
+      }
+
       router.push(`/tiffin/subscriptions?new=${res.subscription.id}`);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Could not create the subscription.");
+      if (e instanceof RazorpayCancelled) {
+        setError("Payment cancelled — the plan is saved as unpaid, you can pay from My subscriptions.");
+      } else {
+        setError(e instanceof ApiError ? e.message : e instanceof Error ? e.message : "Could not create the subscription.");
+      }
     } finally {
       setBusy(false);
     }

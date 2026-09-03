@@ -224,8 +224,17 @@ If dev shows `SegmentViewNode` / `__webpack_modules__ is not a function` errors,
 
 ## 7. Deferred / not done
 
-- No real geocoding, no real rider dispatch (fixed demo partner pool), refunds recorded but never
-  pushed through Razorpay, WhatsApp fail-silent with placeholder messages.
+- No real geocoding, no real rider dispatch (fixed demo partner pool), WhatsApp fail-silent with
+  placeholder messages.
+- **Payments**: the full Razorpay flow is built end to end — server creates real orders +
+  HMAC-verifies signatures (`modules/payments/razorpay.ts`), client opens Razorpay Checkout
+  (`apps/web/src/lib/razorpay.ts`) across `/checkout`, `/premium`, `/tiffin/single-meal`,
+  `/tiffin/subscribe`, each with a `…/verify-payment` endpoint. With no `RAZORPAY_KEY_ID/_SECRET`
+  the server returns a stub `order_local_*` and the client auto-completes it (`"dev-ok"`), so the
+  demo works; **add the two keys and the real widget goes live with no code change**
+  (`GET /payments/config` tells the UI which mode it's in). **Still to wire:** a Razorpay webhook
+  for reconciliation, and the refunds API — cancellations record `refundAmount` but don't push it
+  to Razorpay.
 - Franchise/catering leads: automated **outbound** WhatsApp (the enquirer's brief) needs Meta
   WhatsApp Business API creds + an approved template — the adapter (`modules/leads/notify.ts`) is
   written but dormant. Until then the web shows the brief on-screen + a `wa.me` deep link

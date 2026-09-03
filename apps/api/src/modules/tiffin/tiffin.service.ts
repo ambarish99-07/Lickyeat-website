@@ -6,6 +6,7 @@ import { TiffinClosureModel } from "../../db/models/TiffinClosure.model.js";
 import { TiffinPlanModel } from "../../db/models/TiffinPlan.model.js";
 import { badRequest, forbidden, notFound } from "../../lib/errors.js";
 import { serialize } from "../../lib/serialize.js";
+import { createRazorpayOrder, verifyRazorpaySignature } from "../payments/razorpay.js";
 import { computeMealsForRangeSkippingClosedDates, mealsForStyle } from "./tiffinSchedule.js";
 
 export async function getActiveClosures() {
@@ -68,6 +69,39 @@ export async function createSubscription(userId: string, input: CreateTiffinSubs
     cancellation: null,
   });
 
+  let razorpayOrder = null;
+  if (input.paymentMethod === "razorpay") {
+    const rzp = await createRazorpayOrder(pricePaid, `sub_${sub._id}`);
+    sub.payment!.razorpay!.orderId = rzp.id;
+    await sub.save();
+    razorpayOrder = { id: rzp.id, amount: rzp.amount, currency: rzp.currency, keyId: rzp.keyId };
+  }
+
+  return { subscription: serialize(sub.toObject()), razorpayOrder };
+}
+
+export async function verifySubscriptionPayment(
+  userId: string,
+  id: string,
+  params: { razorpayOrderId: string; razorpayPaymentId: string; razorpaySignature: string },
+) {
+  const sub = await TiffinSubscriptionModel.findById(id);
+  if (!sub) throw notFound("Subscription not found");
+  if (String(sub.userId) !== userId) throw forbidden();
+  const payment = sub.payment!;
+  if (payment.method !== "razorpay") throw badRequest("This subscription is not an online-payment order.");
+  if (payment.razorpay!.orderId !== params.razorpayOrderId) {
+    throw badRequest("Razorpay order id mismatch.");
+  }
+  if (!verifyRazorpaySignature(params)) {
+    payment.status = "failed";
+    await sub.save();
+    throw badRequest("Payment signature verification failed.");
+  }
+  payment.status = "paid";
+  payment.razorpay!.paymentId = params.razorpayPaymentId;
+  payment.razorpay!.signature = params.razorpaySignature;
+  await sub.save();
   return serialize(sub.toObject());
 }
 
