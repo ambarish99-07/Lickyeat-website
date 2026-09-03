@@ -177,6 +177,7 @@ maths is in `resolveCouponDiscount` (shared-types) — callers pass `pricingLine
 | Order tracking (timeline, partner, map, price, cancel) | `app/order/[token]/`, `components/OrderTracker`, `lib/mapEmbed` | `GET /orders/track/:token`, `POST .../cancel` |
 | Active-order pills | `components/ActiveOrderPills` (root layout; hidden on tracking/cart/checkout/admin) | `/orders/mine`, `/tiffin/single-meal/orders/mine` |
 | Order history + one-tap reorder | `app/account/` ("Order history" section) + `app/orders/` delivered rows, `components/ReorderButton` | `GET /orders/:id/reorder` — re-resolves a **delivered** order's lines against the current menu (prices/availability never trusted from the old snapshot), returns cart-ready lines + `unavailable[]` + `priceChanged` |
+| My Tiffin in profile | `app/account/` ("My Tiffin" section), `components/account/MyTiffinSection` | `GET /tiffin/subscriptions`, `/tiffin/single-meal/orders/mine` — read-only summary (live plan + next meals + recent single meals); full management stays on `/tiffin/subscriptions` |
 | Tiffin landing + weekly menu + veg-only + closure banner (SSR + client) | `app/tiffin/`, `components/tiffin/{TiffinLanding,TiffinShell}`, `state/tiffinPreferencesStore` | `GET /tiffin/weekly-menu`, `/tiffin/closures` |
 | Tiffin subscribe / manage (pause, skip, cancel) | `app/tiffin/subscribe/`, `app/tiffin/subscriptions/` | `/tiffin/subscriptions*` |
 | Tiffin single meal + tracking | `app/tiffin/single-meal/`, `app/tiffin/track/[token]/` | `/tiffin/single-meal/*` |

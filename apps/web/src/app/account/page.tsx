@@ -11,6 +11,7 @@ import { Field, Input } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/misc";
 import { ReorderButton } from "@/components/ReorderButton";
+import { MyTiffinSection } from "@/components/account/MyTiffinSection";
 import { rupees, formatDate } from "@/lib/format";
 import { toast } from "@/state/toastStore";
 
@@ -131,6 +132,8 @@ function AccountInner() {
           ))}
         </div>
       </section>
+
+      <MyTiffinSection />
 
       <section className="card space-y-3 p-5">
         <h2 className="font-display font-bold">Profile</h2>
