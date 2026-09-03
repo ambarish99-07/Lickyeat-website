@@ -16,13 +16,10 @@ export function BrandHero({ brand }: { brand: Brand }) {
   return (
     <section className="relative overflow-hidden bg-brand text-brand-ink">
       {hero && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={hero}
-          alt=""
-          className="block w-full object-cover object-center"
-          style={{ aspectRatio: "2048 / 768", maxHeight: 440 }}
-        />
+        <div className="mx-auto max-w-[1600px]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={hero} alt="" className="block h-auto w-full" />
+        </div>
       )}
 
       {!hero && (
@@ -38,11 +35,11 @@ export function BrandHero({ brand }: { brand: Brand }) {
 
       <div
         className={`container-page relative flex flex-col ${
-          hero ? "gap-3 py-9 sm:py-10" : "gap-5 py-14 sm:py-20"
+          hero ? "gap-2.5 py-7 sm:py-8" : "gap-5 py-14 sm:py-20"
         }`}
       >
         <div className="flex items-center gap-4">
-          {logo && (
+          {logo && !hero && (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={logo} alt="" className="h-14 w-14 rounded-2xl ring-4 ring-white/20" />
           )}
@@ -50,12 +47,12 @@ export function BrandHero({ brand }: { brand: Brand }) {
         </div>
         <h1
           className={`max-w-2xl font-display font-extrabold ${
-            hero ? "text-3xl leading-tight sm:text-4xl" : "text-4xl leading-[1.05] sm:text-5xl"
+            hero ? "text-xl leading-tight sm:text-2xl" : "text-4xl leading-[1.05] sm:text-5xl"
           }`}
         >
           {brand.name}
         </h1>
-        <p className="max-w-xl text-brand-ink/85 sm:text-lg">
+        <p className="max-w-2xl text-brand-ink/85 sm:text-lg">
           {brand.description || brand.tagline}
         </p>
       </div>
