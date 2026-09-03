@@ -37,8 +37,24 @@ export function SiteHeader() {
           {user?.role === "admin" && <NavLink href="/admin" label="Admin" />}
         </nav>
 
+        {/* left → right: theme, cart, then the login/account tab on the right */}
         <div className="flex items-center gap-1.5 sm:gap-2">
           <ThemeToggle />
+
+          {/* cart is always an icon */}
+          <Link
+            href="/cart"
+            aria-label={count > 0 ? `Cart, ${count} item${count > 1 ? "s" : ""}` : "Cart"}
+            className="relative grid h-9 w-9 place-items-center rounded-full bg-ink text-cream transition hover:bg-charcoal"
+          >
+            <BagIcon className="h-4 w-4" />
+            {count > 0 && (
+              <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-brand px-1 text-[11px] font-bold text-brand-ink">
+                {count}
+              </span>
+            )}
+          </Link>
+
           {ready && user ? (
             <>
               {/* logged in → account is an icon */}
@@ -62,20 +78,6 @@ export function SiteHeader() {
               Log in
             </Link>
           )}
-
-          {/* cart is always an icon */}
-          <Link
-            href="/cart"
-            aria-label={count > 0 ? `Cart, ${count} item${count > 1 ? "s" : ""}` : "Cart"}
-            className="relative grid h-9 w-9 place-items-center rounded-full bg-ink text-cream transition hover:bg-charcoal"
-          >
-            <BagIcon className="h-4 w-4" />
-            {count > 0 && (
-              <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-brand px-1 text-[11px] font-bold text-brand-ink">
-                {count}
-              </span>
-            )}
-          </Link>
         </div>
       </div>
     </header>
