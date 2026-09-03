@@ -471,7 +471,7 @@ export async function runSeed(opts: { wipe?: boolean } = {}) {
       orderingModel: "catalog",
       status: "live",
       logoUrl: null,
-      heroImageUrl: null,
+      heroImageUrl: brandHeroUrl("the-biryani-lane"),
       primaryColor: "#4F46E5",
       accentColor: "#A5B4FC",
       sortOrder: 4,

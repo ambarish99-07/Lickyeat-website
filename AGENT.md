@@ -232,9 +232,13 @@ If dev shows `SegmentViewNode` / `__webpack_modules__ is not a function` errors,
   (`LICKYEAT_WHATSAPP_NUMBER`). Ops alerts fan out to email (Resend) / WhatsApp / webhook when
   configured; the durable `AdminAlert` queue (bell in admin header) always works. No telephony —
   "call back within 24h" is an SLA surfaced in `/admin/leads`, not an automated dialer.
-- Menu-item / hero photography: `imageUrl` / `heroImageUrl` are supported and rendered when set,
-  but the seed only ships brand **logo** SVGs (`/static/brands/*.svg`). Item cards and brand heroes
-  fall back to typography + brand-colour compositions until real photos are supplied.
+- Photography: brand **logos** (`/static/brands/<slug>.png|svg`) and **hero banners**
+  (`/static/brands/<slug>-hero.jpg`, ~1600×600, art carries the brand mark) ship for all four
+  brands; `BrandHero` shows the banner full-strength with a caption band, or a brand-colour
+  composition when `heroImageUrl` is null. **Menu-item photos** (`imageUrl` →
+  `/static/menu-images/<slug>.jpg`) exist for TBC + Alchemy Tails only — Biryani Lane items have
+  `imageUrl: null` and render as typography cards until photos are supplied. `scripts/optimizeImages.mjs`
+  (sharp) resizes drops-ins.
 - No web E2E tests; no deployment (Render / Vercel unprovisioned).
 - Admin is a lightweight in-app section, not the full mobile-app admin surface (no Analytics,
   Customers deep-dive, Reviews & Complaints, Bulk Orders, brand tab pages, size-variant editor).
