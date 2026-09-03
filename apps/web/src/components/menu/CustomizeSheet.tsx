@@ -95,7 +95,7 @@ export function CustomizeSheet({
         <img src={img} alt="" className="mb-3 h-40 w-full rounded-xl object-cover" />
       )}
       <p className="text-xs font-semibold text-muted">{item.commonName}</p>
-      <p className="mt-1 text-sm text-muted">{item.description}</p>
+      <p className="mt-1 whitespace-pre-line text-sm text-muted">{item.description}</p>
 
       {sizes.length > 1 && (
         <Group label="Size">

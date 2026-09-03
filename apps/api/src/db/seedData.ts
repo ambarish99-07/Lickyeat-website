@@ -135,6 +135,14 @@ type Item = {
   salePercent?: number;
   pairsWith?: string[];
   addOnNames?: string[];
+  /** label for the base `price` portion, e.g. "500 g (1 pc chicken + 1 egg)". */
+  portionSize?: string;
+  /** larger/alternate portions with their own price. */
+  sizeVariants?: Array<{ label: string; price: number }>;
+  /** biryani/food items don't take a sugar/ice choice. */
+  hasSugarIceCustomization?: boolean;
+  /** set false when there's no photo yet (card falls back to typography). */
+  hasImage?: boolean;
 };
 
 const TBC_ITEMS: Item[] = [
@@ -173,6 +181,164 @@ const ALCHEMY_ITEMS: Item[] = [
   { id: "watermelon-mojito", signatureName: "Watermelon Mojito", commonName: "Watermelon Mint Mojito", description: "Fresh watermelon juice muddled with mint and lime.", price: 139, category: "mocktails", flavorBadges: ["Fruity", "Minty"], isNew: true, pairsWith: ["mango-mojito"] },
 ];
 
+// The Biryani Lane — every biryani comes in a 500 g box or a 1 kg box; the
+// larger box carries proportionally more chicken / egg / aloo / paneer. That
+// split is captured in the size labels and spelled out in the description.
+// Prices are indicative launch prices (Patna). No photos yet → typography cards.
+type BiryaniRow = {
+  id: string;
+  signatureName: string;
+  commonName: string;
+  description: string;
+  category: "chicken-biryani" | "veg-paneer-biryani";
+  half: { label: string; price: number };
+  full: { label: string; price: number };
+  flavorBadges: string[];
+  isPopular?: boolean;
+  isStaffPick?: boolean;
+  isNew?: boolean;
+};
+
+const BIRYANI_ROWS: BiryaniRow[] = [
+  {
+    id: "chicken-biryani",
+    signatureName: "Chicken Biryani",
+    commonName: "Chicken Dum Biryani",
+    description:
+      "The house biryani — long-grain basmati layered with marinated chicken and slow dum-cooked.\n• 500 g box: 1 pc chicken + 1 egg\n• 1 kg box: 2 pc chicken + 2 eggs",
+    category: "chicken-biryani",
+    half: { label: "500 g box", price: 179 },
+    full: { label: "1 kg box", price: 319 },
+    flavorBadges: ["Dum-cooked", "Classic"],
+    isPopular: true,
+    isStaffPick: true,
+  },
+  {
+    id: "special-chicken-biryani",
+    signatureName: "Special Chicken Biryani",
+    commonName: "Loaded Chicken Biryani",
+    description:
+      "Our chicken biryani, loaded with an extra potato.\n• 500 g box: 1 pc chicken + 1 aloo + 1 egg\n• 1 kg box: 2 pc chicken + 2 aloo + 2 boiled eggs",
+    category: "chicken-biryani",
+    half: { label: "500 g box", price: 219 },
+    full: { label: "1 kg box", price: 389 },
+    flavorBadges: ["Loaded"],
+    isPopular: true,
+  },
+  {
+    id: "kolkata-style-biryani",
+    signatureName: "Kolkata Style Biryani",
+    commonName: "Aloo-Egg Kolkata Biryani",
+    description:
+      "The Kolkata classic — subtle spice, a soft potato and a boiled egg in every box.\n• 500 g box: 1 pc chicken + 1 aloo + 1 egg\n• 1 kg box: 2 pc chicken + 2 aloo + 2 eggs",
+    category: "chicken-biryani",
+    half: { label: "500 g box", price: 209 },
+    full: { label: "1 kg box", price: 379 },
+    flavorBadges: ["Kolkata", "Mild"],
+    isStaffPick: true,
+  },
+  {
+    id: "hyderabadi-biryani",
+    signatureName: "Hyderabadi Biryani",
+    commonName: "Spicy Hyderabadi Dum Biryani",
+    description:
+      "Full of spice, kachchi-style dum.\n• 500 g box: 1 pc chicken + 1 egg\n• 1 kg box: 2 pc chicken + 2 eggs",
+    category: "chicken-biryani",
+    half: { label: "500 g box", price: 229 },
+    full: { label: "1 kg box", price: 409 },
+    flavorBadges: ["Spicy", "Hyderabadi"],
+    isPopular: true,
+  },
+  {
+    id: "sarson-chicken-biryani",
+    signatureName: "Sarson Chicken Biryani",
+    commonName: "Mustard-Flavoured Chicken Biryani",
+    description:
+      "A sarson (mustard) twist through the rice and chicken.\n• 500 g box: 1 pc chicken + 1 aloo + 1 egg\n• 1 kg box: 2 pc chicken + 1 aloo + 2 eggs",
+    category: "chicken-biryani",
+    half: { label: "500 g box", price: 219 },
+    full: { label: "1 kg box", price: 399 },
+    flavorBadges: ["Sarson", "New"],
+    isNew: true,
+  },
+  {
+    id: "shahi-chicken-biryani",
+    signatureName: "Shahi Chicken Biryani",
+    commonName: "Dry-Fruit Chicken Biryani",
+    description:
+      "The royal one — finished with ghee and dry fruits.\n• 500 g box: 1 pc chicken + 1 aloo + 1 egg + dry fruits\n• 1 kg box: 2 pc chicken + 2 aloo + 2 eggs + dry fruits",
+    category: "chicken-biryani",
+    half: { label: "500 g box", price: 259 },
+    full: { label: "1 kg box", price: 459 },
+    flavorBadges: ["Shahi", "Dry fruits"],
+    isStaffPick: true,
+  },
+  {
+    id: "pocket-chicken-biryani",
+    signatureName: "Pocket Chicken Biryani",
+    commonName: "Omelette-Pocket Chicken Biryani",
+    description:
+      "Biryani sealed inside a thin omelette pocket.\n• 500 g box: 1 pc chicken + 1 aloo + 1 egg, in an omelette pocket\n• 1 kg box: 2 pc chicken + 2 aloo + 2 eggs, in an omelette pocket",
+    category: "chicken-biryani",
+    half: { label: "500 g box", price: 239 },
+    full: { label: "1 kg box", price: 419 },
+    flavorBadges: ["Signature", "New"],
+    isNew: true,
+  },
+  {
+    id: "veg-biryani",
+    signatureName: "Veg Biryani",
+    commonName: "Mixed Vegetable Biryani",
+    description:
+      "Seasonal vegetables dum-cooked with the same masala.\n• 500 g box: full veggies\n• 1 kg box: extra veggies",
+    category: "veg-paneer-biryani",
+    half: { label: "500 g box", price: 139 },
+    full: { label: "1 kg box", price: 249 },
+    flavorBadges: ["Veg"],
+  },
+  {
+    id: "paneer-biryani",
+    signatureName: "Paneer Biryani",
+    commonName: "Cottage Cheese Biryani",
+    description:
+      "Soft paneer cubes through the biryani.\n• 500 g box: 100 g paneer\n• 1 kg box: 200 g paneer",
+    category: "veg-paneer-biryani",
+    half: { label: "500 g box", price: 189 },
+    full: { label: "1 kg box", price: 339 },
+    flavorBadges: ["Veg", "Paneer"],
+    isPopular: true,
+  },
+  {
+    id: "paneer-tikka-biryani",
+    signatureName: "Paneer Tikka Biryani",
+    commonName: "Grilled Paneer Tikka Biryani",
+    description:
+      "Char-grilled paneer tikka folded into the biryani.\n• 500 g box: 100 g paneer tikka\n• 1 kg box: 200 g paneer tikka",
+    category: "veg-paneer-biryani",
+    half: { label: "500 g box", price: 209 },
+    full: { label: "1 kg box", price: 369 },
+    flavorBadges: ["Veg", "Grilled"],
+    isStaffPick: true,
+  },
+];
+
+const BIRYANI_ITEMS: Item[] = BIRYANI_ROWS.map((r) => ({
+  id: r.id,
+  signatureName: r.signatureName,
+  commonName: r.commonName,
+  description: r.description,
+  price: r.half.price,
+  category: r.category,
+  portionSize: r.half.label,
+  sizeVariants: [{ label: r.full.label, price: r.full.price }],
+  hasSugarIceCustomization: false,
+  hasImage: false,
+  flavorBadges: r.flavorBadges,
+  isPopular: r.isPopular,
+  isNew: r.isNew,
+  isStaffPick: r.isStaffPick,
+}));
+
 function buildItems(items: Item[], brandId: string) {
   return items.map((i) => ({
     _id: i.id,
@@ -182,7 +348,8 @@ function buildItems(items: Item[], brandId: string) {
     description: i.description,
     price: i.price,
     category: i.category,
-    imageUrl: menuImageUrl(i.id),
+    portionSize: i.portionSize ?? "",
+    imageUrl: (i.hasImage ?? true) ? menuImageUrl(i.id) : null,
     flavorBadges: i.flavorBadges,
     isPopular: i.isPopular,
     isNew: i.isNew,
@@ -190,9 +357,9 @@ function buildItems(items: Item[], brandId: string) {
     isAvailable: i.isAvailable ?? true,
     salePercent: i.salePercent,
     pairsWith: i.pairsWith ?? [],
-    hasSugarIceCustomization: true,
+    hasSugarIceCustomization: i.hasSugarIceCustomization ?? true,
     addOnNames: i.addOnNames ?? [],
-    sizeVariants: [],
+    sizeVariants: i.sizeVariants ?? [],
   }));
 }
 
@@ -298,11 +465,11 @@ export async function runSeed(opts: { wipe?: boolean } = {}) {
     {
       brandId: "the-biryani-lane",
       name: "The Biryani Lane",
-      tagline: "Dum-cooked. Coming soon to Patna.",
+      tagline: "Dum-cooked. Box it 500 g or 1 kg.",
       description:
-        "Long-grain basmati, slow dum, hand-ground masala. Kachchi mutton, Hyderabadi chicken and a serious veg dum. Launching shortly.",
+        "Long-grain basmati, slow dum, hand-ground masala. Chicken, Hyderabadi, Kolkata-style, Shahi with dry fruits, plus veg and paneer. Every biryani boxed 500 g or 1 kg — the bigger box comes with double the chicken, egg and aloo.",
       orderingModel: "catalog",
-      status: "coming-soon",
+      status: "live",
       logoUrl: null,
       heroImageUrl: null,
       primaryColor: "#4F46E5",
@@ -325,7 +492,11 @@ export async function runSeed(opts: { wipe?: boolean } = {}) {
 
   // -------------------------------------------------------- menu items ----
   await MenuItemModel.deleteMany({});
-  await MenuItemModel.create([...buildItems(TBC_ITEMS, "tbc"), ...buildItems(ALCHEMY_ITEMS, "alchemy-tails")]);
+  await MenuItemModel.create([
+    ...buildItems(TBC_ITEMS, "tbc"),
+    ...buildItems(ALCHEMY_ITEMS, "alchemy-tails"),
+    ...buildItems(BIRYANI_ITEMS, "the-biryani-lane"),
+  ]);
 
   // ------------------------------------------------------------- combos ----
   await ComboModel.deleteMany({});

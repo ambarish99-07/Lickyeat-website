@@ -6,7 +6,7 @@ in a pnpm / Turborepo monorepo. Brands under one umbrella:
 - **The Blenders Club** — thick shakes & cold coffee (Choco Crush, Hazelnut Heaven, Coffee Chill …)
 - **The Alchemy Tails** — zero-proof mocktails (Blue Lagoon, Mango Mojito, Rainbow Fizz …)
 - **GG Tiffin Service** — Bihari home-style tiffin, weekly/monthly plans or single meals
-- **The Biryani Lane** — coming soon
+- **The Biryani Lane** — dum biryanis (Chicken, Hyderabadi, Shahi, Veg, Paneer …), each boxed 500 g or 1 kg
 
 The catalog, prices, combos, coupons, brand identity and photography match the real Lickyeat app.
 

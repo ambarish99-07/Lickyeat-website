@@ -170,6 +170,8 @@ const CATEGORY_LABELS: Record<string, string> = {
   "signature-shakes": "Signature Shakes",
   "cold-coffee": "Cold Coffee",
   mocktails: "Mocktails",
+  "chicken-biryani": "Chicken Biryani",
+  "veg-paneer-biryani": "Veg & Paneer Biryani",
 };
 
 export function categoryLabel(category: string): string {

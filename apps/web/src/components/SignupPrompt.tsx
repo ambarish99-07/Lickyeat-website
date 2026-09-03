@@ -9,7 +9,7 @@ import { useAuth } from "@/state/authStore";
 import { CloseIcon } from "@/components/ui/icons";
 
 const KEY = "lky_signup_prompt_seen";
-const SNOOZE_MS = 7 * 24 * 60 * 60 * 1000; // re-show a week after dismissal
+const SNOOZE_MS = 3 * 24 * 60 * 60 * 1000; // re-show 3 days after a dismissal
 const HIDE_ON = ["/login", "/signup", "/admin", "/checkout"];
 
 export function SignupPrompt() {
