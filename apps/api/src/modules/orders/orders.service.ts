@@ -6,6 +6,10 @@ import type {
 import { refundPercentForCancellation } from "@lickyeat/shared-types";
 import { OrderModel } from "../../db/models/Order.model.js";
 import { UserModel } from "../../db/models/User.model.js";
+import { MenuItemModel } from "../../db/models/MenuItem.model.js";
+import { MenuAddOnModel } from "../../db/models/MenuAddOn.model.js";
+import { ComboModel } from "../../db/models/Combo.model.js";
+import { computeComboPrice } from "@lickyeat/pricing";
 import type { AuthedUser } from "../../middleware/auth.js";
 import { badRequest, forbidden, notFound } from "../../lib/errors.js";
 import { accessToken, orderCode } from "../../lib/ids.js";
@@ -163,6 +167,152 @@ export async function getOrderByAccessToken(token: string) {
 export async function listMyOrders(userId: string) {
   const orders = await OrderModel.find({ userId }).sort({ createdAt: -1 }).lean();
   return orders.map((o) => serialize(o));
+}
+
+/**
+ * Re-resolve a delivered order's lines against the CURRENT menu so the customer
+ * can drop them back into the cart. Every price is recomputed here — the old
+ * snapshot is only used for *what* was ordered, never for how much it cost.
+ */
+export async function buildReorder(orderId: string, user: AuthedUser) {
+  const order = await OrderModel.findById(orderId).lean();
+  if (!order) throw notFound("Order not found");
+  if (user.role !== "admin" && String(order.userId ?? "") !== user.id) {
+    throw forbidden("That's not your order.");
+  }
+  if (order.status !== "delivered") {
+    throw badRequest("Only delivered orders can be reordered.");
+  }
+
+  const addOnCatalog = await MenuAddOnModel.find({}).lean();
+  const addOnByName = new Map(addOnCatalog.map((a) => [a.name, a]));
+
+  const lines: Array<Record<string, unknown>> = [];
+  const unavailable: string[] = [];
+  let priceChanged = false;
+
+  for (const snap of order.lines) {
+    const label = snap.signatureName || snap.name || "An item";
+
+    if (snap.kind === "item") {
+      const item = await MenuItemModel.findById(snap.refId).lean();
+      if (!item || !(item.isAvailable ?? true)) {
+        unavailable.push(label);
+        continue;
+      }
+
+      let unitBasePrice = item.price;
+      let selectedSizeLabel: string | undefined;
+      if (snap.selectedSizeLabel && snap.selectedSizeLabel !== item.portionSize) {
+        const variant = (item.sizeVariants ?? []).find((v) => v.label === snap.selectedSizeLabel);
+        if (variant && (variant.isAvailable ?? true)) {
+          unitBasePrice = variant.price;
+          selectedSizeLabel = variant.label;
+        }
+        // variant gone → silently fall back to the base size
+      }
+
+      const addOns: string[] = [];
+      let unitAddOnsPrice = 0;
+      for (const a of snap.addOns ?? []) {
+        const name = a.name;
+        if (!name) continue;
+        const catalog = addOnByName.get(name);
+        if ((item.addOnNames ?? []).includes(name) && catalog && (catalog.isAvailable ?? true)) {
+          addOns.push(name);
+          unitAddOnsPrice += catalog.price;
+        }
+      }
+
+      const salePercent = item.salePercent ?? 0;
+      const wasUnit = (snap.unitBasePrice ?? 0) + (snap.unitAddOnsPrice ?? 0);
+      if (wasUnit !== unitBasePrice + unitAddOnsPrice) priceChanged = true;
+
+      const hasSugarIce = item.hasSugarIceCustomization ?? true;
+      lines.push({
+        brandId: order.brandId,
+        kind: "item",
+        refId: String(item._id),
+        signatureName: item.signatureName,
+        commonName: item.commonName,
+        imageUrl: item.imageUrl ?? null,
+        category: item.category,
+        unitBasePrice,
+        salePercent,
+        unitAddOnsPrice,
+        quantity: snap.quantity ?? 1,
+        customization: {
+          addOns,
+          comboItemIds: [],
+          ...(selectedSizeLabel ? { selectedSizeLabel } : {}),
+          ...(hasSugarIce && snap.sugar ? { sugar: snap.sugar } : {}),
+          ...(hasSugarIce && snap.ice ? { ice: snap.ice } : {}),
+          ...(snap.comment ? { comment: snap.comment } : {}),
+        },
+      });
+    } else {
+      const combo = await ComboModel.findById(snap.refId).lean();
+      if (!combo || !(combo.isAvailable ?? true)) {
+        unavailable.push(label);
+        continue;
+      }
+
+      let constituentIds: string[];
+      if (combo.type === "curated") {
+        constituentIds = combo.itemIds.map(String);
+      } else {
+        // choose-n: recover the picks from the snapshot's "Sig + Sig" commonName.
+        const wanted = (snap.commonName ?? "").split(" + ").map((s) => s.trim()).filter(Boolean);
+        const eligible = await MenuItemModel.find({
+          _id: { $in: combo.eligibleItemIds.map(String) },
+        }).lean();
+        const bySig = new Map(eligible.map((i) => [i.signatureName, String(i._id)]));
+        const picked = wanted.map((w) => bySig.get(w)).filter((x): x is string => Boolean(x));
+        if (picked.length !== (combo.chooseCount ?? 0)) {
+          unavailable.push(combo.name);
+          continue;
+        }
+        constituentIds = picked;
+      }
+
+      const items = await MenuItemModel.find({ _id: { $in: constituentIds } }).lean();
+      if (items.length !== new Set(constituentIds).size || items.some((i) => !(i.isAvailable ?? true))) {
+        unavailable.push(combo.name);
+        continue;
+      }
+      const byId = new Map(items.map((i) => [String(i._id), i]));
+      const unitBasePrice = computeComboPrice(
+        constituentIds.map((id) => byId.get(id)!.price),
+        combo.discountPercent ?? undefined,
+      );
+      if ((snap.unitBasePrice ?? 0) !== unitBasePrice) priceChanged = true;
+
+      lines.push({
+        brandId: order.brandId,
+        kind: "combo",
+        refId: String(combo._id),
+        signatureName: combo.name,
+        commonName: constituentIds.map((id) => byId.get(id)!.signatureName).join(" + "),
+        imageUrl: combo.imageUrl ?? byId.get(constituentIds[0]!)?.imageUrl ?? null,
+        category: "combo",
+        unitBasePrice,
+        salePercent: 0,
+        unitAddOnsPrice: 0,
+        quantity: snap.quantity ?? 1,
+        customization: {
+          addOns: [],
+          comboItemIds: constituentIds,
+          ...(snap.comment ? { comment: snap.comment } : {}),
+        },
+      });
+    }
+  }
+
+  if (lines.length === 0) {
+    throw badRequest("None of the items on that order are available to reorder right now.");
+  }
+
+  return { sourceCode: order.code, brandId: order.brandId, lines, unavailable, priceChanged };
 }
 
 export async function cancelOrder(token: string, body: CancelOrderRequest) {

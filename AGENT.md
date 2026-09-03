@@ -176,6 +176,7 @@ maths is in `resolveCouponDiscount` (shared-types) — callers pass `pricingLine
 | Checkout (COD + simulated Razorpay) | `app/checkout/` | `POST /orders`, `/orders/verify-payment` |
 | Order tracking (timeline, partner, map, price, cancel) | `app/order/[token]/`, `components/OrderTracker`, `lib/mapEmbed` | `GET /orders/track/:token`, `POST .../cancel` |
 | Active-order pills | `components/ActiveOrderPills` (root layout; hidden on tracking/cart/checkout/admin) | `/orders/mine`, `/tiffin/single-meal/orders/mine` |
+| Order history + one-tap reorder | `app/account/` ("Order history" section) + `app/orders/` delivered rows, `components/ReorderButton` | `GET /orders/:id/reorder` — re-resolves a **delivered** order's lines against the current menu (prices/availability never trusted from the old snapshot), returns cart-ready lines + `unavailable[]` + `priceChanged` |
 | Tiffin landing + weekly menu + veg-only + closure banner (SSR + client) | `app/tiffin/`, `components/tiffin/{TiffinLanding,TiffinShell}`, `state/tiffinPreferencesStore` | `GET /tiffin/weekly-menu`, `/tiffin/closures` |
 | Tiffin subscribe / manage (pause, skip, cancel) | `app/tiffin/subscribe/`, `app/tiffin/subscriptions/` | `/tiffin/subscriptions*` |
 | Tiffin single meal + tracking | `app/tiffin/single-meal/`, `app/tiffin/track/[token]/` | `/tiffin/single-meal/*` |
@@ -213,8 +214,8 @@ seeds itself on boot when the DB is empty — the simplest local setup. Or point
 `MONGODB_URI`.
 
 Tests: `pnpm -r test` — `packages/pricing` (19 unit), `packages/shared-types` (8), `apps/api`
-(auth / order flow / menu-availability / coupons / leads integration, mongodb-memory-server). No
-web component tests.
+(auth / order flow / menu-availability / coupons / leads / reorder integration,
+mongodb-memory-server). No web component tests.
 
 If dev shows `SegmentViewNode` / `__webpack_modules__ is not a function` errors, delete
 `apps/web/.next` and restart — that's stale build cache from alternating `next build` / `next dev`.

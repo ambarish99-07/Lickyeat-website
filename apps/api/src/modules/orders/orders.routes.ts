@@ -45,6 +45,14 @@ ordersRouter.get(
   }),
 );
 
+ordersRouter.get(
+  "/:id/reorder",
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    res.json({ reorder: await service.buildReorder(param(req, "id"), req.user!) });
+  }),
+);
+
 // accessToken IS the authorization — no auth check (§3.4).
 ordersRouter.get(
   "/track/:token",

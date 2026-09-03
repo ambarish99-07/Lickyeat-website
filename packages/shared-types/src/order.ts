@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { BrandIdSchema, ObjectIdSchema, RupeesSchema } from "./common.js";
+import { BrandIdSchema, ObjectIdSchema, PercentSchema, RupeesSchema } from "./common.js";
 import { AddressSchema } from "./auth.js";
 import { IceLevelSchema, SugarLevelSchema } from "./menu.js";
 import { DiscountReasonSchema, PricingResultSchema, RewardReasonSchema } from "./pricing.js";
@@ -186,3 +186,37 @@ export function refundPercentForCancellation(status: OrderStatus): number {
       return 0;
   }
 }
+
+// ---------------------------------------------------------------------------
+// Reorder — re-resolve a past order's lines against the CURRENT menu so the
+// customer can drop them straight back in the cart. Prices are recomputed
+// server-side; nothing here is trusted from an old snapshot.
+// ---------------------------------------------------------------------------
+
+export const ReorderLineSchema = z.object({
+  brandId: BrandIdSchema,
+  kind: z.enum(["item", "combo"]),
+  refId: z.string(),
+  signatureName: z.string(),
+  commonName: z.string(),
+  imageUrl: z.string().nullable(),
+  category: z.string(),
+  unitBasePrice: RupeesSchema,
+  salePercent: PercentSchema,
+  unitAddOnsPrice: RupeesSchema,
+  quantity: z.number().int().min(1),
+  customization: CartLineCustomizationSchema,
+});
+export type ReorderLine = z.infer<typeof ReorderLineSchema>;
+
+export const ReorderResultSchema = z.object({
+  /** the order this was built from, for the toast/heading. */
+  sourceCode: z.string(),
+  brandId: BrandIdSchema,
+  lines: z.array(ReorderLineSchema),
+  /** names of items/combos that couldn't be added (off menu or out of stock). */
+  unavailable: z.array(z.string()),
+  /** true when any line's current price differs from what was originally paid. */
+  priceChanged: z.boolean(),
+});
+export type ReorderResult = z.infer<typeof ReorderResultSchema>;

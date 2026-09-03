@@ -3,12 +3,15 @@
 import { useState } from "react";
 import Link from "next/link";
 import useSWR from "swr";
-import type { Address } from "@lickyeat/shared-types";
+import type { Address, Order } from "@lickyeat/shared-types";
 import { RequireAuth } from "@/components/RequireAuth";
 import { useAuth } from "@/state/authStore";
 import { api, ApiError } from "@/lib/api";
 import { Field, Input } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/misc";
+import { ReorderButton } from "@/components/ReorderButton";
+import { rupees, formatDate } from "@/lib/format";
 import { toast } from "@/state/toastStore";
 
 export default function AccountPage() {
@@ -22,6 +25,8 @@ export default function AccountPage() {
 function AccountInner() {
   const { user, setUser } = useAuth();
   const { data: addrData, mutate } = useSWR<{ addresses: Address[] }>("/account/addresses");
+  const { data: ordersData } = useSWR<{ orders: Order[] }>("/orders/mine");
+  const delivered = (ordersData?.orders ?? []).filter((o) => o.status === "delivered");
   const [name, setName] = useState(user?.name ?? "");
   const [addr, setAddr] = useState<Address>({
     label: "Home",
@@ -79,6 +84,52 @@ function AccountInner() {
         <Link href="/premium" className="link mt-2 inline-block text-sm">
           Lickyeat Premium Membership →
         </Link>
+      </section>
+
+      <section className="card p-5">
+        <div className="flex items-center justify-between">
+          <h2 className="font-display font-bold">Order history</h2>
+          <Link href="/orders" className="link text-sm">
+            All orders →
+          </Link>
+        </div>
+        <p className="mt-1 text-sm text-muted">
+          Delivered orders — tap Reorder to add the same items to your cart at today&rsquo;s prices.
+        </p>
+
+        {ordersData && delivered.length === 0 && (
+          <p className="mt-3 text-sm text-muted">No delivered orders yet.</p>
+        )}
+
+        <div className="mt-3 space-y-2">
+          {delivered.map((o) => (
+            <div
+              key={o.id}
+              className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-line px-3.5 py-3"
+            >
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold">{o.code}</span>
+                  <Badge tone="good">delivered</Badge>
+                </div>
+                <p className="mt-0.5 truncate text-sm text-charcoal">
+                  {o.lines
+                    .map((l) => (l.quantity > 1 ? `${l.quantity}× ${l.signatureName}` : l.signatureName))
+                    .join(", ")}
+                </p>
+                <p className="text-xs text-muted">
+                  {formatDate(o.createdAt)} · {o.brandId} · {rupees(o.pricing.total)}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Link href={`/order/${o.accessToken}`} className="btn-ghost btn-sm">
+                  View
+                </Link>
+                <ReorderButton orderId={o.id} />
+              </div>
+            </div>
+          ))}
+        </div>
       </section>
 
       <section className="card space-y-3 p-5">

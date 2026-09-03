@@ -10,6 +10,7 @@ import type {
   Order,
   PremiumMembershipStatus,
   PricingResult,
+  ReorderResult,
   StoreStatus,
   TiffinPlan,
   TiffinSingleMealOrder,
@@ -77,6 +78,9 @@ export interface OrderResponse {
 }
 export interface OrdersResponse {
   orders: Order[];
+}
+export interface ReorderResponse {
+  reorder: ReorderResult;
 }
 export interface TiffinSingleMealOrdersResponse {
   orders: TiffinSingleMealOrder[];

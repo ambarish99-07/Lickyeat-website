@@ -6,6 +6,7 @@ import type { Order, TiffinSingleMealOrder } from "@lickyeat/shared-types";
 import { RequireAuth } from "@/components/RequireAuth";
 import { rupees, formatDateTime } from "@/lib/format";
 import { Badge, EmptyState } from "@/components/ui/misc";
+import { ReorderButton } from "@/components/ReorderButton";
 
 export default function MyOrdersPage() {
   return (
@@ -37,24 +38,24 @@ function OrdersInner() {
           <h2 className="eyebrow mb-3">Food &amp; drinks</h2>
           <div className="space-y-2">
             {reg.orders.map((o) => (
-              <Link
+              <div
                 key={o.id}
-                href={`/order/${o.accessToken}`}
-                className="card flex items-center justify-between p-4 transition hover:shadow-lift"
+                className="card flex flex-wrap items-center justify-between gap-3 p-4"
               >
-                <div>
+                <Link href={`/order/${o.accessToken}`} className="min-w-0 flex-1 transition hover:opacity-80">
                   <p className="font-semibold">{o.code}</p>
                   <p className="text-xs text-muted">
                     {formatDateTime(o.createdAt)} · {o.brandId}
                   </p>
-                </div>
+                </Link>
                 <div className="flex items-center gap-3">
                   <span className="font-semibold">{rupees(o.pricing.total)}</span>
                   <Badge tone={o.status === "cancelled" ? "bad" : o.status === "delivered" ? "good" : "brand"}>
                     {o.status.replace(/-/g, " ")}
                   </Badge>
+                  {o.status === "delivered" && <ReorderButton orderId={o.id} />}
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
         </section>
