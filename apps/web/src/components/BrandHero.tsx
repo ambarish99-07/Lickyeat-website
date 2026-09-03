@@ -2,23 +2,24 @@ import type { Brand } from "@lickyeat/shared-types";
 import { assetUrl } from "@/lib/format";
 
 /**
- * Brand-owned hero. Uses the brand's own palette (via the surrounding
- * <BrandTheme>) and logo/hero image from its record — nothing hardcoded.
+ * Brand-owned hero. The brand's palette comes from the surrounding <BrandTheme>
+ * (CSS vars) and the logo / hero image from its record — nothing hardcoded.
  *
- * With a hero photograph: shown full-strength as a banner (the supplied art
- * already carries the brand mark), with the name + tagline in a brand-coloured
- * caption band beneath. With no photo: a layered colour composition.
+ * The photo (authored 1600×600 / 8:3, and already carrying the brand mark) runs
+ * as a banner; the name + tagline sit below it on the plain page background with
+ * the brand colour as the accent, so the block reads like the rest of the site
+ * rather than a saturated slab. With no photo, a soft brand-tinted panel.
  */
 export function BrandHero({ brand }: { brand: Brand }) {
   const logo = assetUrl(brand.logoUrl);
   const hero = assetUrl(brand.heroImageUrl);
 
   return (
-    <section className="relative overflow-hidden bg-brand text-brand-ink">
+    <section className="border-b border-line">
       {hero && (
         <div className="mx-auto max-w-[1600px]">
-          {/* Every brand hero is authored 1600×600 (8:3); object-cover keeps the
-              band identical even if a future upload isn't exactly that. */}
+          {/* object-cover at 8:3 keeps the band identical even if a future
+              upload isn't exactly 1600×600. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={hero}
@@ -29,39 +30,47 @@ export function BrandHero({ brand }: { brand: Brand }) {
         </div>
       )}
 
-      {!hero && (
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-30"
-          style={{
-            background:
-              "radial-gradient(60% 90% at 15% 0%, rgb(var(--brand-accent) / 0.8), transparent 60%), radial-gradient(50% 80% at 100% 100%, rgb(255 255 255 / 0.25), transparent 55%)",
-          }}
-        />
-      )}
-
       <div
-        className={`container-page relative flex flex-col ${
-          hero ? "gap-2.5 py-7 sm:py-8" : "gap-5 py-14 sm:py-20"
-        }`}
+        className={`relative overflow-hidden ${hero ? "" : "bg-brand-soft"}`}
       >
-        <div className="flex items-center gap-4">
-          {logo && !hero && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={logo} alt="" className="h-14 w-14 rounded-2xl ring-4 ring-white/20" />
-          )}
-          <span className="chip bg-white/15 text-brand-ink">A Lickyeat kitchen</span>
-        </div>
-        <h1
-          className={`max-w-2xl font-display font-extrabold ${
-            hero ? "text-xl leading-tight sm:text-2xl" : "text-4xl leading-[1.05] sm:text-5xl"
+        {!hero && (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 opacity-70"
+            style={{
+              background:
+                "radial-gradient(55% 90% at 12% 0%, rgb(var(--brand) / 0.14), transparent 60%)",
+            }}
+          />
+        )}
+
+        <div
+          className={`container-page relative flex flex-col ${
+            hero ? "gap-2.5 py-7 sm:py-8" : "gap-4 py-12 sm:py-16"
           }`}
         >
-          {brand.name}
-        </h1>
-        <p className="max-w-2xl text-brand-ink/85 sm:text-lg">
-          {brand.description || brand.tagline}
-        </p>
+          <div className="flex items-center gap-4">
+            {logo && !hero && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={logo} alt="" className="h-14 w-14 rounded-2xl" />
+            )}
+            <span
+              className={`chip ${hero ? "bg-brand-soft text-brand" : "bg-brand text-brand-ink"}`}
+            >
+              A Lickyeat kitchen
+            </span>
+          </div>
+          <h1
+            className={`max-w-2xl font-display font-extrabold text-brand ${
+              hero ? "text-xl leading-tight sm:text-2xl" : "text-4xl leading-[1.05] sm:text-5xl"
+            }`}
+          >
+            {brand.name}
+          </h1>
+          <p className="max-w-2xl text-charcoal sm:text-lg">
+            {brand.description || brand.tagline}
+          </p>
+        </div>
       </div>
     </section>
   );
