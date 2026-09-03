@@ -470,7 +470,7 @@ export async function runSeed(opts: { wipe?: boolean } = {}) {
         "Long-grain basmati, slow dum, hand-ground masala. Chicken, Hyderabadi, Kolkata-style, Shahi with dry fruits, plus veg and paneer. Every biryani boxed 500 g or 1 kg — the bigger box comes with double the chicken, egg and aloo.",
       orderingModel: "catalog",
       status: "live",
-      logoUrl: null,
+      logoUrl: brandLogoUrl("the-biryani-lane"),
       heroImageUrl: brandHeroUrl("the-biryani-lane"),
       primaryColor: "#4F46E5",
       accentColor: "#A5B4FC",
