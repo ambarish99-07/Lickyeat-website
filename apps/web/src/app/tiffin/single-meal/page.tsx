@@ -29,7 +29,9 @@ function SingleMealForm() {
   const { user } = useAuth();
   const { vegOnly } = useTiffinPrefs();
 
-  const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+  // IST "today" — same day boundary the server dates orders under.
+  const todayIst = new Date(Date.now() + 5.5 * 3600_000).toISOString().slice(0, 10);
+  const tomorrow = new Date(Date.now() + 86400000 + 5.5 * 3600_000).toISOString().slice(0, 10);
   const [date, setDate] = useState(tomorrow);
   const { data } = useSWR<{ options: SingleMealOption[] }>(`/tiffin/single-meal/menu?date=${date}`);
 
@@ -58,7 +60,8 @@ function SingleMealForm() {
     () => options.find((o) => o.meal === meal && o.tier === tier && o.diet === effDiet),
     [options, meal, tier, effDiet],
   );
-  const mealAvailable = options.some((o) => o.meal === meal);
+  // Assume orderable until the menu for this date has actually loaded.
+  const mealAvailable = !data || options.some((o) => o.meal === meal);
 
   const addOnTotal = (selected?.addOns ?? [])
     .filter((a) => addOns.includes(a.name))
@@ -112,9 +115,18 @@ function SingleMealForm() {
   return (
     <div className="max-w-lg space-y-6">
       <Field label="Date">
-        <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} min={tomorrow > date ? undefined : undefined} />
+        <Input
+          type="date"
+          value={date}
+          min={todayIst}
+          onChange={(e) => setDate(e.target.value)}
+        />
       </Field>
-      <Field label="Meal" error={!mealAvailable ? "Ordering window for this meal has closed for the date." : undefined}>
+      <Field
+        label="Meal"
+        hint="Breakfast is next-day only. Order today's lunch before 1 pm IST, dinner before 9 pm IST — after that it rolls to tomorrow."
+        error={!mealAvailable ? "The ordering window for this meal has closed for the date you picked." : undefined}
+      >
         <SegmentedControl
           value={meal}
           onChange={setMeal}

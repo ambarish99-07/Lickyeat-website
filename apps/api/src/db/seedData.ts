@@ -564,19 +564,21 @@ export async function runSeed(opts: { wipe?: boolean } = {}) {
     imageUrl: diet === "veg" ? vegImg : nvImg,
     active: true,
   });
+  // Prices realigned to the mobile app's Regular-tier catalog (2026-09-07).
+  // Weekly = round(monthly / 3) + 50; sale flags dropped.
   await TiffinPlanModel.create([
-    plan("Weekly Veg — One Meal a Day", "veg", "single", "weekly", 899),
-    plan("Weekly Non-Veg — One Meal a Day", "non-veg", "single", "weekly", 1399),
-    plan("Monthly Veg — One Meal a Day", "veg", "single", "monthly", 3499, 20),
-    plan("Monthly Non-Veg — One Meal a Day", "non-veg", "single", "monthly", 5499, 25),
-    plan("Weekly Veg — Lunch & Dinner", "veg", "twice-daily", "weekly", 1699),
-    plan("Weekly Non-Veg — Lunch & Dinner", "non-veg", "twice-daily", "weekly", 2599),
-    plan("Monthly Veg — Lunch & Dinner", "veg", "twice-daily", "monthly", 6499),
-    plan("Monthly Non-Veg — Lunch & Dinner", "non-veg", "twice-daily", "monthly", 9999),
-    plan("Weekly Veg — All Three Meals", "veg", "thrice-daily", "weekly", 2399),
-    plan("Weekly Non-Veg — All Three Meals", "non-veg", "thrice-daily", "weekly", 3599),
-    plan("Monthly Veg — All Three Meals", "veg", "thrice-daily", "monthly", 8999),
-    plan("Monthly Non-Veg — All Three Meals", "non-veg", "thrice-daily", "monthly", 13999, 30),
+    plan("Weekly Veg — One Meal a Day", "veg", "single", "weekly", 650),
+    plan("Weekly Non-Veg — One Meal a Day", "non-veg", "single", "weekly", 733),
+    plan("Monthly Veg — One Meal a Day", "veg", "single", "monthly", 1800),
+    plan("Monthly Non-Veg — One Meal a Day", "non-veg", "single", "monthly", 2050),
+    plan("Weekly Veg — Lunch & Dinner", "veg", "twice-daily", "weekly", 1183),
+    plan("Weekly Non-Veg — Lunch & Dinner", "non-veg", "twice-daily", "weekly", 1250),
+    plan("Monthly Veg — Lunch & Dinner", "veg", "twice-daily", "monthly", 3400),
+    plan("Monthly Non-Veg — Lunch & Dinner", "non-veg", "twice-daily", "monthly", 3600),
+    plan("Weekly Veg — All Three Meals", "veg", "thrice-daily", "weekly", 1250),
+    plan("Weekly Non-Veg — All Three Meals", "non-veg", "thrice-daily", "weekly", 1333),
+    plan("Monthly Veg — All Three Meals", "veg", "thrice-daily", "monthly", 3600),
+    plan("Monthly Non-Veg — All Three Meals", "non-veg", "thrice-daily", "monthly", 3850),
   ]);
 
   // --------------------------------------------------------------- blog ----

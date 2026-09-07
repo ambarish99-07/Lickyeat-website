@@ -38,11 +38,17 @@ export const WEEKLY_PLAN_CANCELLABLE = false;
 export const SINGLE_MEAL_CANCELLATION_WINDOW_MINUTES = 15;
 export const MAX_SINGLE_MEAL_QUANTITY = 10;
 
-// Meal ordering cutoffs (IST). Order today's meal only before its cutoff hour.
+/**
+ * Meal ordering cutoffs (IST) — today's meal is orderable only before this hour;
+ * past it the order rolls to the same meal tomorrow. Matches the mobile app's
+ * `mealOrderingWindow.ts`: each same-day window closes an hour before it ends
+ * (lunch 2pm → 1pm cutoff, dinner 10pm → 9pm cutoff). Breakfast is always cooked
+ * the night before, so it's never orderable same-day (cutoff 0).
+ */
 export const MEAL_ORDERING_CUTOFF_HOUR_IST: Record<TiffinMealType, number> = {
-  breakfast: 21, // 9 pm the night before
-  lunch: 9,
-  dinner: 15,
+  breakfast: 0,
+  lunch: 13,
+  dinner: 21,
 };
 
 // ---------------------------------------------------------------------------

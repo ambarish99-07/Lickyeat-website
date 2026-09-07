@@ -34,11 +34,18 @@ export function BrandMenu({
     }, 0),
   );
 
-  // "Veg only" — offered only when this brand's menu actually has a non-veg item
-  // (a pure shakes/mocktails brand has nothing to filter).
+  // Veg / Non-veg menu tabs — shown only when this brand actually has both kinds
+  // (a pure shakes/mocktails brand has nothing to split).
   const hasNonVeg = items.some((i) => i.dietType === "non-veg");
-  const [vegOnly, setVegOnly] = useState(false);
-  const shownItems = vegOnly ? items.filter((i) => i.dietType !== "non-veg") : items;
+  const hasVeg = items.some((i) => i.dietType !== "non-veg");
+  const showDietTabs = hasNonVeg && hasVeg;
+  const [diet, setDiet] = useState<"all" | "veg" | "non-veg">("all");
+  const shownItems =
+    diet === "all"
+      ? items
+      : diet === "veg"
+        ? items.filter((i) => i.dietType !== "non-veg")
+        : items.filter((i) => i.dietType === "non-veg");
 
   const sections = categories.filter((c) => shownItems.some((i) => i.category === c));
   const [activeSlug, setActiveSlug] = useState(sections[0] ? slug(sections[0]) : "");
@@ -66,26 +73,35 @@ export function BrandMenu({
         </div>
       )}
 
-      {hasNonVeg && (
-        <div className="mb-5 flex items-center justify-between gap-3">
-          <span className="flex items-center gap-2 text-sm text-muted">
-            <DietDot nonVeg title="This menu has non-vegetarian items" />
-            Contains non-veg
-          </span>
-          <button
-            type="button"
-            onClick={() => setVegOnly((v) => !v)}
-            aria-pressed={vegOnly}
-            className={cn(
-              "inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm font-semibold transition",
-              vegOnly
-                ? "border-[#2E7D32] bg-[#2E7D32]/10 text-[#2E7D32]"
-                : "border-line text-charcoal hover:border-ink/30",
-            )}
-          >
-            <DietDot nonVeg={false} />
-            Veg only
-          </button>
+      {showDietTabs && (
+        <div className="mb-5 inline-flex rounded-full border border-line bg-surface p-1">
+          {(
+            [
+              ["all", "Full menu", null],
+              ["veg", "Veg", false],
+              ["non-veg", "Non-veg", true],
+            ] as const
+          ).map(([value, label, nonVeg]) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setDiet(value)}
+              aria-pressed={diet === value}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-semibold transition",
+                diet === value
+                  ? value === "non-veg"
+                    ? "bg-[#B3261E]/12 text-[#B3261E]"
+                    : value === "veg"
+                      ? "bg-[#2E7D32]/12 text-[#2E7D32]"
+                      : "bg-ink text-cream"
+                  : "text-charcoal hover:text-ink",
+              )}
+            >
+              {nonVeg !== null && <DietDot nonVeg={nonVeg} />}
+              {label}
+            </button>
+          ))}
         </div>
       )}
 
