@@ -27,6 +27,7 @@ export function SiteHeader() {
 
         <nav className="hidden items-center gap-1 text-sm font-medium md:flex">
           <NavLink href="/#brands" label="Brands" />
+          <NavLink href="/browse" label="Browse" />
           <NavLink href="/tiffin" label="GG Tiffin" />
           <NavLink href="/catering" label="Catering" />
           <NavLink href="/franchise" label="Franchise" />

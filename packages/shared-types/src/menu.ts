@@ -192,3 +192,36 @@ export function categoryLabel(category: string): string {
     category.replace(/[-_]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
   );
 }
+
+// ---------------------------------------------------------------------------
+// Cross-brand browse taxonomy — a fixed "shop the whole of Lickyeat by kind"
+// list, NOT derived from each brand's own category strings. Each entry matches
+// either raw MenuItem.category values or a dietType.
+// ---------------------------------------------------------------------------
+export interface BrowseCategoryDef {
+  id: string;
+  label: string;
+  /** MenuItem.category values that belong here. */
+  categories?: string[];
+  /** …or match every item of this dietType instead. */
+  diet?: MenuDietType;
+}
+
+export const BROWSE_CATEGORIES: BrowseCategoryDef[] = [
+  { id: "shakes", label: "Shakes", categories: ["signature-shakes"] },
+  { id: "cold-coffee", label: "Cold Coffee", categories: ["cold-coffee"] },
+  { id: "mocktails", label: "Mocktails", categories: ["mocktails"] },
+  { id: "biryani", label: "Biryani", categories: ["chicken-biryani", "veg-paneer-biryani"] },
+  { id: "veg", label: "Pure Veg", diet: "veg" },
+  { id: "non-veg", label: "Non-veg", diet: "non-veg" },
+];
+
+export const BrowseCategorySummarySchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  /** a real photo from one of this category's items, or null if none. */
+  image: z.string().nullable(),
+  itemCount: z.number().int().nonnegative(),
+  brandCount: z.number().int().nonnegative(),
+});
+export type BrowseCategorySummary = z.infer<typeof BrowseCategorySummarySchema>;

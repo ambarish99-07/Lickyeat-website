@@ -47,6 +47,20 @@ menuRouter.patch(
 );
 
 menuRouter.get(
+  "/browse",
+  asyncHandler(async (_req, res) => {
+    res.json({ categories: await service.browseCategorySummaries() });
+  }),
+);
+
+menuRouter.get(
+  "/browse/:categoryId",
+  asyncHandler(async (req, res) => {
+    res.json(await service.browseCategoryItems(param(req, "categoryId")));
+  }),
+);
+
+menuRouter.get(
   "/:brandId/items",
   asyncHandler(async (req, res) => {
     // Public menu returns every item, including out-of-stock ones (rendered

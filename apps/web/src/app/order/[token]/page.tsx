@@ -54,6 +54,7 @@ export default function OrderTrackPage({ params }: { params: Promise<{ token: st
     })),
     pricing: o.pricing,
     createdAt: o.createdAt,
+    etaMinutes: 35, // typical Patna door-to-door once out for delivery
   };
 
   return (

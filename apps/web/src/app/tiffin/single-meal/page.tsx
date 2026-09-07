@@ -114,6 +114,25 @@ function SingleMealForm() {
 
   return (
     <div className="max-w-lg space-y-6">
+      <div className="rounded-2xl border border-line bg-sand/40 p-4 text-sm">
+        <p className="font-display font-bold">Ordering windows (IST)</p>
+        <ul className="mt-2 space-y-1 text-charcoal">
+          <li>
+            <span className="font-semibold">Breakfast</span> — order by{" "}
+            <span className="font-semibold">midnight the night before</span> (cooked overnight, so
+            it&rsquo;s always for the next day).
+          </li>
+          <li>
+            <span className="font-semibold">Lunch</span> — order today&rsquo;s lunch until{" "}
+            <span className="font-semibold">1:00 pm</span>; after that it rolls to tomorrow.
+          </li>
+          <li>
+            <span className="font-semibold">Dinner</span> — order today&rsquo;s dinner until{" "}
+            <span className="font-semibold">9:00 pm</span>; after that it rolls to tomorrow.
+          </li>
+        </ul>
+      </div>
+
       <Field label="Date">
         <Input
           type="date"
@@ -124,8 +143,7 @@ function SingleMealForm() {
       </Field>
       <Field
         label="Meal"
-        hint="Breakfast is next-day only. Order today's lunch before 1 pm IST, dinner before 9 pm IST — after that it rolls to tomorrow."
-        error={!mealAvailable ? "The ordering window for this meal has closed for the date you picked." : undefined}
+        error={!mealAvailable ? "The ordering window for this meal has closed for the date you picked — pick a later date." : undefined}
       >
         <SegmentedControl
           value={meal}

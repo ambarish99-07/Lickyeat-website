@@ -10,6 +10,7 @@ import { Field, Input } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { Badge, cn } from "@/components/ui/misc";
 import { PriceBreakdown } from "@/components/PriceBreakdown";
+import { DeliveryProgress } from "@/components/DeliveryProgress";
 
 const STEPS = ["received", "preparing", "out-for-delivery", "delivered"] as const;
 const STEP_LABEL: Record<string, string> = {
@@ -33,6 +34,8 @@ export interface TrackableOrder {
   items: Array<{ name: string; sub?: string; quantity: number; lineSubtotal: number }>;
   pricing?: PricingResult | null;
   createdAt: string;
+  /** ~door-to-door minutes for the moving-rider strip. Omit for tiffin (no ASAP ETA). */
+  etaMinutes?: number;
 }
 
 export function OrderTracker({
@@ -121,6 +124,16 @@ export function OrderTracker({
               })}
             </ol>
           </div>
+        )}
+
+        {order.status === "out-for-delivery" && !cancelled && (
+          <DeliveryProgress
+            outForDeliveryAt={
+              order.statusHistory.find((h) => h.status === "out-for-delivery")?.at ?? null
+            }
+            etaMinutes={order.etaMinutes}
+            partnerName={order.deliveryPartner?.name}
+          />
         )}
 
         {order.deliveryPartner && !cancelled && (

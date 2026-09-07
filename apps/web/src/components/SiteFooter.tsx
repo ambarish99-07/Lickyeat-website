@@ -39,6 +39,7 @@ export function SiteFooter() {
             <li><Link href="/offers" className="hover:text-brand">Offers &amp; coupons</Link></li>
             <li><Link href="/app" className="hover:text-brand">Get the app</Link></li>
             <li><Link href="/blog" className="hover:text-brand">Blog</Link></li>
+            <li><Link href="/browse" className="hover:text-brand">Browse everything</Link></li>
             <li><Link href="/#brands" className="hover:text-brand">All kitchens</Link></li>
           </ul>
         </nav>

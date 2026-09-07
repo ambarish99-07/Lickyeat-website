@@ -2,6 +2,7 @@ import type {
   AdminAlert,
   BlogPost,
   Brand,
+  BrowseCategorySummary,
   Combo,
   Coupon,
   Lead,
@@ -62,6 +63,13 @@ export interface MenuItemsResponse {
 }
 export interface CategoriesResponse {
   categories: string[];
+}
+export interface BrowseCategoriesResponse {
+  categories: BrowseCategorySummary[];
+}
+export interface BrowseCategoryItemsResponse {
+  label: string;
+  items: MenuItem[];
 }
 export interface CombosResponse {
   combos: ComboWithLive[];

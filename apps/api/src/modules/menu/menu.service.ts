@@ -5,10 +5,12 @@ import type {
   UpdateComboRequest,
   UpdateMenuItemRequest,
 } from "@lickyeat/shared-types";
+import { BROWSE_CATEGORIES } from "@lickyeat/shared-types";
 import { computeComboPrice } from "@lickyeat/pricing";
 import { MenuItemModel } from "../../db/models/MenuItem.model.js";
 import { MenuAddOnModel } from "../../db/models/MenuAddOn.model.js";
 import { ComboModel } from "../../db/models/Combo.model.js";
+import { BrandModel } from "../../db/models/Brand.model.js";
 import { notFound } from "../../lib/errors.js";
 import { serialize } from "../../lib/serialize.js";
 
@@ -64,6 +66,57 @@ export async function getMenuItem(id: string) {
   if (!item) throw notFound("Menu item not found");
   const [resolved] = await withResolvedAddOns([item]);
   return resolved;
+}
+
+// ---------------------------------------------------------------------------
+// Cross-brand browse ("shop all of Lickyeat by kind")
+// ---------------------------------------------------------------------------
+
+async function liveBrandIds(): Promise<string[]> {
+  const brands = await BrandModel.find({ status: "live" }).select("brandId").lean();
+  return brands.map((b) => b.brandId);
+}
+
+function browseFilter(def: (typeof BROWSE_CATEGORIES)[number], brandIds: string[]) {
+  const f: Record<string, unknown> = { brandId: { $in: brandIds } };
+  if (def.diet) f.dietType = def.diet;
+  else if (def.categories) f.category = { $in: def.categories };
+  return f;
+}
+
+/** One card per fixed browse category, with a real photo + counts. */
+export async function browseCategorySummaries() {
+  const brandIds = await liveBrandIds();
+  return Promise.all(
+    BROWSE_CATEGORIES.map(async (def) => {
+      const filter = browseFilter(def, brandIds);
+      const [sample, itemCount, brands] = await Promise.all([
+        MenuItemModel.findOne({ ...filter, imageUrl: { $ne: null } }).select("imageUrl").lean(),
+        MenuItemModel.countDocuments(filter),
+        MenuItemModel.distinct("brandId", filter),
+      ]);
+      return {
+        id: def.id,
+        label: def.label,
+        image: sample?.imageUrl ?? null,
+        itemCount,
+        brandCount: brands.length,
+      };
+    }),
+  );
+}
+
+/** Every live-brand item in one browse category, grouped by brand. */
+export async function browseCategoryItems(categoryId: string) {
+  const def = BROWSE_CATEGORIES.find((c) => c.id === categoryId);
+  if (!def) throw notFound("Unknown category");
+  const brandIds = await liveBrandIds();
+  const items = await MenuItemModel.find(browseFilter(def, brandIds))
+    .collation({ locale: "en" })
+    .sort({ brandId: 1, isAvailable: -1, signatureName: 1 })
+    .lean();
+  const resolved = await withResolvedAddOns(items);
+  return { label: def.label, items: resolved };
 }
 
 /** Categories in first-seen order (the seed lists items category-by-category). */
