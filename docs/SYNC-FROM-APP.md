@@ -40,6 +40,10 @@ changes, port the parts that apply here.
   `TiffinSubscription.tier`, a 36-plan Regular/Mini/Premium catalog,
   lunch-only/dinner-only styles, Mini-no-breakfast validation, subscription
   meals resolved against the plan's tier.
+- **Cross-brand browse** (`8fef14e`) — `GET /menu/browse[/:id]` + `/browse` grid +
+  `/browse/[id]` items-by-kitchen. "Pure Veg" / "Non-veg" match by `dietType`.
+- **Moving-rider delivery strip** (`8fef14e`) — `components/DeliveryProgress` in
+  `OrderTracker` while out-for-delivery (time estimate, not GPS).
 
 ### Catalog audit (2026-09-07)
 TBC + Alchemy Tails menu items and prices are **identical** between the app's
@@ -47,14 +51,7 @@ TBC + Alchemy Tails menu items and prices are **identical** between the app's
 website-only (the app has no biryani menu items). Only the **tiffin plan
 catalog** diverged.
 
-## Backlog — reviewed, not yet ported (needs a decision)
-
-### Cross-brand browse categories (`browseCategory.ts`, `AllCouponsScreen` nav)
-The app added a fixed cross-brand taxonomy (Shakes, Biryani, Chicken, Paneer…)
-with a `GET` returning `{id,label,image,itemCount}` per category, powering a
-"browse all brands by category" screen. The website has no equivalent — it's
-per-brand menus + home. A `/browse` page would be a genuine new discovery
-surface; medium effort (new endpoint + page). Not started.
+## Backlog — reviewed, not yet ported
 
 ### `Brand.displayOrder`
 The app renamed/added an explicit brand ordering field. The website already has
