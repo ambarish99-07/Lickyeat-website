@@ -24,6 +24,16 @@ export function getSingleMealBasePrice(tier: TiffinTier, meal: TiffinMealType): 
   return singleMealBasePrice(tier, meal);
 }
 
+/** Effective price of a specific day's dish — per-dish override, else the slot price. */
+export function getSingleMealPrice(
+  meal: TiffinMealType,
+  diet: TiffinDiet,
+  tier: TiffinTier,
+  dateStr: string,
+): number | null {
+  return resolveDish(tier, diet, meal, dateStr)?.price ?? null;
+}
+
 export function resolveAddOns(
   tier: TiffinTier,
   meal: TiffinMealType,

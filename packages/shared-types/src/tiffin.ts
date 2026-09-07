@@ -60,14 +60,14 @@ export const MEAL_ORDERING_CUTOFF_HOUR_IST: Record<TiffinMealType, number> = {
 export type WeeklyDishTable = readonly [string, string, string, string, string, string, string];
 
 export const TIFFIN_WEEKLY_VEG: Record<TiffinMealType, WeeklyDishTable> = {
-  // Sun, Mon, Tue, Wed, Thu, Fri, Sat
+  // Sun, Mon, Tue, Wed, Thu, Fri, Sat — kept in sync with the app's Regular tier.
   breakfast: [
     "Puri with Chole & Achar",
     "Masala Pasta",
-    "Sandwich",
+    "Poha",
     "Upma",
     "Aloo Paratha with Curd & Achar",
-    "Poha",
+    "Sandwich",
     "Sattu Paratha with Curd & Achar",
   ],
   lunch: [
@@ -80,7 +80,7 @@ export const TIFFIN_WEEKLY_VEG: Record<TiffinMealType, WeeklyDishTable> = {
     "Aloo Gobhi",
   ],
   dinner: [
-    "Dum Aloo",
+    "Veg Biryani",
     "Aloo Gobhi",
     "Lauki Masala",
     "Matar Paneer",
@@ -94,9 +94,29 @@ export const TIFFIN_WEEKLY_VEG: Record<TiffinMealType, WeeklyDishTable> = {
 export const TIFFIN_WEEKLY_NONVEG_OVERRIDES: Partial<
   Record<TiffinMealType, Partial<Record<number, string>>>
 > = {
-  breakfast: { 3: "Bread Omelette" }, // Wed
-  dinner: { 1: "Fish Curry", 3: "Egg Curry", 5: "Chicken Curry" }, // Mon / Wed / Fri
+  breakfast: { 3: "Bread Omelette", 5: "Chicken Sandwich" }, // Wed / Fri
+  dinner: { 0: "Chicken Biryani", 1: "Fish Curry", 3: "Egg Curry", 5: "Chicken Curry" }, // Sun / Mon / Wed / Fri
 };
+
+/**
+ * Dishes that are actually non-veg. The tiffin "diet" is the *rotation* a
+ * customer subscribes to — the non-veg rotation still serves veg dishes on
+ * most days (Aloo Matar lunch, etc.) and swaps in meat/egg/fish on a few. This
+ * classifies the dish itself, for the per-dish veg/non-veg mark on the menu.
+ */
+const NON_VEG_TIFFIN_DISHES = new Set([
+  "Fish Curry",
+  "Egg Curry",
+  "Chicken Curry",
+  "Chicken Biryani",
+  "Bread Omelette",
+  "Chicken Sandwich",
+  "Mutton Curry",
+]);
+
+export function isTiffinDishNonVeg(dishName: string): boolean {
+  return NON_VEG_TIFFIN_DISHES.has(dishName.trim());
+}
 
 export function getTiffinDishForDay(
   meal: TiffinMealType,

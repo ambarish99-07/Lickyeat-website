@@ -12,8 +12,8 @@ import { pickDeliveryPartner } from "../orders/deliveryPartner.js";
 import { getActiveClosures } from "./tiffin.service.js";
 import { tiffinImageUrl } from "../../lib/assets.js";
 import {
-  getSingleMealBasePrice,
   getSingleMealDish,
+  getSingleMealPrice,
   isMealOrderableForDate,
   priceAddOns,
   resolveAddOns,
@@ -29,7 +29,7 @@ export function getSingleMealMenu(dateStr: string) {
     for (const diet of diets) {
       for (const tier of tiers) {
         const dish = getSingleMealDish(meal, diet, tier, dateStr);
-        const basePrice = getSingleMealBasePrice(tier, meal);
+        const basePrice = getSingleMealPrice(meal, diet, tier, dateStr);
         if (!dish || basePrice == null) continue;
         out.push({
           meal,
@@ -63,7 +63,7 @@ export async function createSingleMealOrder(
   }
 
   const dish = getSingleMealDish(input.meal, input.diet, input.tier, input.date);
-  const basePrice = getSingleMealBasePrice(input.tier, input.meal);
+  const basePrice = getSingleMealPrice(input.meal, input.diet, input.tier, input.date);
   if (!dish || basePrice == null) {
     throw badRequest("That meal isn't on the menu for this date and tier.");
   }

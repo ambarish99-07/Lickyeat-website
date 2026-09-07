@@ -3,9 +3,11 @@
 import Link from "next/link";
 import useSWR from "swr";
 import type { Brand, TiffinClosure } from "@lickyeat/shared-types";
+import { isTiffinDishNonVeg } from "@lickyeat/shared-types";
 import { useTiffinPrefs } from "@/state/tiffinPreferencesStore";
 import { assetUrl, formatDate } from "@/lib/format";
 import { cn } from "@/components/ui/misc";
+import { DietDot } from "@/components/menu/DietDot";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -72,12 +74,34 @@ export function TiffinLanding({
           </div>
         )}
 
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h2 className="font-display text-xl font-extrabold">This week&rsquo;s menu</h2>
-          <label className="flex items-center gap-2 text-sm font-medium">
-            <input type="checkbox" checked={vegOnly} onChange={(e) => setVegOnly(e.target.checked)} />
-            Veg only
-          </label>
+          <div className="inline-flex rounded-full border border-line bg-surface p-1">
+            {(
+              [
+                ["veg", "Veg", false],
+                ["non-veg", "Non-veg", true],
+              ] as const
+            ).map(([value, label, nv]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setVegOnly(value === "veg")}
+                aria-pressed={diet === value}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-semibold transition",
+                  diet === value
+                    ? nv
+                      ? "bg-[#B3261E]/12 text-[#B3261E]"
+                      : "bg-[#2E7D32]/12 text-[#2E7D32]"
+                    : "text-charcoal hover:text-ink",
+                )}
+              >
+                <DietDot nonVeg={nv} />
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="space-y-6">
@@ -97,7 +121,10 @@ export function TiffinLanding({
                       )}
                       <div className="p-2">
                         <p className="text-[11px] font-bold uppercase tracking-wide text-muted">{DAYS[i]}</p>
-                        <p className="mt-0.5 text-xs leading-tight text-charcoal">{dish.name}</p>
+                        <p className="mt-0.5 flex items-start gap-1 text-xs leading-tight text-charcoal">
+                          <DietDot nonVeg={isTiffinDishNonVeg(dish.name)} size={12} className="mt-0.5 shrink-0" />
+                          {dish.name}
+                        </p>
                       </div>
                     </div>
                   );
