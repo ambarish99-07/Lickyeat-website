@@ -24,6 +24,8 @@ const STYLE_LABEL: Record<string, string> = {
   single: "One meal a day",
   "twice-daily": "Lunch & dinner",
   "thrice-daily": "All three meals",
+  "lunch-only": "Lunch only",
+  "dinner-only": "Dinner only",
 };
 
 export default function SubscribePage() {
@@ -47,6 +49,7 @@ function SubscribeForm() {
 
   const [diet, setDiet] = useState<"veg" | "non-veg">("veg");
   const [duration, setDuration] = useState<"weekly" | "monthly">("monthly");
+  const [tier, setTier] = useState<"regular" | "mini" | "premium">("regular");
   const [planId, setPlanId] = useState<string | null>(preselect);
   const [mealType, setMealType] = useState<"breakfast" | "lunch" | "dinner">("lunch");
   const [startDate, setStartDate] = useState(
@@ -64,10 +67,18 @@ function SubscribeForm() {
   const [busy, setBusy] = useState(false);
 
   const visible = useMemo(
-    () => plans.filter((p) => p.diet === diet && p.duration === duration),
-    [plans, diet, duration],
+    () =>
+      plans.filter(
+        (p) => p.diet === diet && p.duration === duration && (p.tier ?? "regular") === tier,
+      ),
+    [plans, diet, duration, tier],
   );
   const selected = plans.find((p) => p.id === planId) ?? null;
+  // Mini can't do breakfast → if a Mini "single" plan is picked, force lunch/dinner.
+  const mealChoices =
+    selected?.tier === "mini"
+      ? (["lunch", "dinner"] as const)
+      : (["breakfast", "lunch", "dinner"] as const);
 
   async function subscribe() {
     if (!selected) return;
@@ -128,6 +139,21 @@ function SubscribeForm() {
         />
       </div>
 
+      <Field label="Tier" hint="Mini = smaller portion, lunch & dinner only. Premium = larger portion + weekend specials.">
+        <SegmentedControl
+          value={tier}
+          onChange={(t) => {
+            setTier(t);
+            setPlanId(null);
+          }}
+          options={[
+            { value: "regular", label: "Regular" },
+            { value: "mini", label: "Mini" },
+            { value: "premium", label: "Premium" },
+          ]}
+        />
+      </Field>
+
       <div className="grid gap-3 sm:grid-cols-3">
         {visible.map((p) => {
           const img = assetUrl(p.imageUrl);
@@ -166,9 +192,9 @@ function SubscribeForm() {
       {selected?.style === "single" && (
         <Field label="Which meal each day?">
           <SegmentedControl
-            value={mealType}
+            value={(mealChoices as readonly string[]).includes(mealType) ? mealType : "lunch"}
             onChange={setMealType}
-            options={(["breakfast", "lunch", "dinner"] as const).map((m) => ({ value: m, label: m }))}
+            options={mealChoices.map((m) => ({ value: m, label: m }))}
           />
         </Field>
       )}

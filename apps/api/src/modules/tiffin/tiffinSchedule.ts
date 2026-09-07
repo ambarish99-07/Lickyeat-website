@@ -1,13 +1,13 @@
-import type { TiffinDiet, TiffinMealType, TiffinPlanStyle } from "@lickyeat/shared-types";
-import { getTiffinDishForDay } from "@lickyeat/shared-types";
+import type { TiffinDiet, TiffinMealType, TiffinPlanStyle, TiffinTier } from "@lickyeat/shared-types";
+import { mealTypesForStyle } from "@lickyeat/shared-types";
+import { resolveDish } from "./tiffinDishData.js";
 
+/** Meals a style delivers each day. Re-exported for callers that used it before. */
 export function mealsForStyle(
   style: TiffinPlanStyle,
   singleMeal: TiffinMealType = "lunch",
 ): TiffinMealType[] {
-  if (style === "single") return [singleMeal];
-  if (style === "twice-daily") return ["lunch", "dinner"];
-  return ["breakfast", "lunch", "dinner"];
+  return mealTypesForStyle(style, singleMeal);
 }
 
 function addDays(dateStr: string, days: number): string {
@@ -18,6 +18,16 @@ function addDays(dateStr: string, days: number): string {
 
 function weekdayOf(dateStr: string): number {
   return new Date(dateStr + "T00:00:00Z").getUTCDay();
+}
+
+/** The dish for a given day, resolved against the subscription's own tier. */
+function dishFor(
+  tier: TiffinTier,
+  diet: TiffinDiet,
+  meal: TiffinMealType,
+  dateStr: string,
+): string {
+  return resolveDish(tier, diet, meal, dateStr)?.dishName ?? "Home-style Thali";
 }
 
 export interface ScheduledMeal {
@@ -35,6 +45,7 @@ export interface ScheduledMeal {
 export function computeMealsForRangeSkippingClosedDates(opts: {
   startDate: string;
   deliveryDays: number;
+  tier: TiffinTier;
   diet: TiffinDiet;
   style: TiffinPlanStyle;
   singleMeal?: TiffinMealType;
@@ -50,20 +61,18 @@ export function computeMealsForRangeSkippingClosedDates(opts: {
   let guard = 0;
   while (deliveredDays < opts.deliveryDays && guard < 400) {
     guard++;
-    if (isClosed(cursor)) {
-      for (const meal of styleMeals) {
-        meals.push({ date: cursor, meal, dishName: getTiffinDishForDay(meal, opts.diet, weekdayOf(cursor)), status: "closed" });
-      }
-      cursor = addDays(cursor, 1);
-      continue;
-    }
+    const closed = isClosed(cursor);
     for (const meal of styleMeals) {
       meals.push({
         date: cursor,
         meal,
-        dishName: getTiffinDishForDay(meal, opts.diet, weekdayOf(cursor)),
-        status: "scheduled",
+        dishName: dishFor(opts.tier, opts.diet, meal, cursor),
+        status: closed ? "closed" : "scheduled",
       });
+    }
+    if (closed) {
+      cursor = addDays(cursor, 1);
+      continue;
     }
     deliveredDays++;
     if (deliveredDays < opts.deliveryDays) cursor = addDays(cursor, 1);

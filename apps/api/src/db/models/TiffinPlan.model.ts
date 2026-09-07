@@ -4,9 +4,10 @@ const tiffinPlanSchema = new Schema(
   {
     name: { type: String, required: true },
     diet: { type: String, enum: ["veg", "non-veg"], required: true },
+    tier: { type: String, enum: ["regular", "mini", "premium"], default: "regular" },
     style: {
       type: String,
-      enum: ["single", "twice-daily", "thrice-daily"],
+      enum: ["single", "twice-daily", "thrice-daily", "lunch-only", "dinner-only"],
       required: true,
     },
     duration: { type: String, enum: ["weekly", "monthly"], required: true },

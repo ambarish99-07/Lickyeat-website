@@ -10,9 +10,15 @@ export const GG_TIFFIN_BRAND_ID = "gg-tiffin" as const;
 export const TiffinDietSchema = z.enum(["veg", "non-veg"]);
 export type TiffinDiet = z.infer<typeof TiffinDietSchema>;
 
-/** Single-meal ordering tiers. Subscriptions are always effectively "regular". */
+/** Meal tiers — shared by single-meal ordering AND (as of the Mini/Premium plan
+ * addition) the subscription catalog. Mini has no breakfast dish anywhere. */
 export const TiffinTierSchema = z.enum(["regular", "mini", "premium"]);
 export type TiffinTier = z.infer<typeof TiffinTierSchema>;
+export const TIFFIN_TIER_LABELS: Record<TiffinTier, string> = {
+  regular: "Regular",
+  mini: "Mini",
+  premium: "Premium",
+};
 
 export const TiffinMealTypeSchema = z.enum(["breakfast", "lunch", "dinner"]);
 export type TiffinMealType = z.infer<typeof TiffinMealTypeSchema>;
@@ -20,9 +26,51 @@ export type TiffinMealType = z.infer<typeof TiffinMealTypeSchema>;
 /**
  * "single" = one meal a day (customer picks breakfast/lunch/dinner at subscribe
  * time). "twice-daily" = lunch + dinner. "thrice-daily" = all three.
+ * "lunch-only" / "dinner-only" = one fixed meal, sold as its own plan (no choice).
  */
-export const TiffinPlanStyleSchema = z.enum(["single", "twice-daily", "thrice-daily"]);
+export const TiffinPlanStyleSchema = z.enum([
+  "single",
+  "twice-daily",
+  "thrice-daily",
+  "lunch-only",
+  "dinner-only",
+]);
 export type TiffinPlanStyle = z.infer<typeof TiffinPlanStyleSchema>;
+
+/** The meal types a given style delivers each day (for a fixed style; "single"
+ * defers to the customer's pick). */
+export function mealTypesForStyle(
+  style: TiffinPlanStyle,
+  singleMeal: TiffinMealType = "lunch",
+): TiffinMealType[] {
+  switch (style) {
+    case "single":
+      return [singleMeal];
+    case "twice-daily":
+      return ["lunch", "dinner"];
+    case "thrice-daily":
+      return ["breakfast", "lunch", "dinner"];
+    case "lunch-only":
+      return ["lunch"];
+    case "dinner-only":
+      return ["dinner"];
+  }
+}
+
+/** Meal types a tier can serve (Mini has no breakfast). */
+export function tierMealTypes(tier: TiffinTier): TiffinMealType[] {
+  return tier === "mini" ? ["lunch", "dinner"] : ["breakfast", "lunch", "dinner"];
+}
+
+/** Is this (tier, style, chosen meal) combination coherent? */
+export function isValidTierStyle(
+  tier: TiffinTier,
+  style: TiffinPlanStyle,
+  singleMeal?: TiffinMealType,
+): boolean {
+  const allowed = new Set(tierMealTypes(tier));
+  return mealTypesForStyle(style, singleMeal ?? "lunch").every((m) => allowed.has(m));
+}
 
 export const TiffinPlanDurationSchema = z.enum(["weekly", "monthly"]);
 export type TiffinPlanDuration = z.infer<typeof TiffinPlanDurationSchema>;
@@ -160,6 +208,9 @@ export const TiffinPlanSchema = z.object({
   id: ObjectIdSchema,
   name: z.string(),
   diet: TiffinDietSchema,
+  /** Which single-meal tier this plan cooks to — "regular" for plans created
+   * before tiers existed. */
+  tier: TiffinTierSchema.default("regular"),
   style: TiffinPlanStyleSchema,
   duration: TiffinPlanDurationSchema,
   durationDays: z.number().int().positive(),
@@ -197,6 +248,8 @@ export const TiffinSubscriptionSchema = z.object({
   planId: ObjectIdSchema,
   planName: z.string(),
   diet: TiffinDietSchema,
+  /** Snapshotted from the plan at subscribe time — "regular" for old subs. */
+  tier: TiffinTierSchema.default("regular"),
   style: TiffinPlanStyleSchema,
   duration: TiffinPlanDurationSchema,
   /** the customer's meal choice for a "single" style plan. */

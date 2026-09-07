@@ -546,39 +546,69 @@ export async function runSeed(opts: { wipe?: boolean } = {}) {
   await TiffinPlanModel.deleteMany({});
   const vegImg = tiffinImageUrl("veg-tiffin");
   const nvImg = tiffinImageUrl("non-veg-tiffin");
+  type PStyle = "single" | "twice-daily" | "thrice-daily" | "lunch-only" | "dinner-only";
+  type PTier = "regular" | "mini" | "premium";
   const plan = (
     name: string,
     diet: "veg" | "non-veg",
-    style: "single" | "twice-daily" | "thrice-daily",
+    tier: PTier,
+    style: PStyle,
     duration: "weekly" | "monthly",
     price: number,
-    salePercent?: number,
   ) => ({
     name,
     diet,
+    tier,
     style,
     duration,
     durationDays: TIFFIN_PLAN_DAYS[duration],
     price,
-    salePercent: salePercent ?? null,
+    salePercent: null,
     imageUrl: diet === "veg" ? vegImg : nvImg,
     active: true,
   });
-  // Prices realigned to the mobile app's Regular-tier catalog (2026-09-07).
-  // Weekly = round(monthly / 3) + 50; sale flags dropped.
+  // Full tiered catalog, prices from the mobile app (2026-09-07).
+  // Weekly ≈ round(monthly / 3) + 50. Mini = lunch/dinner only (no breakfast dish).
   await TiffinPlanModel.create([
-    plan("Weekly Veg — One Meal a Day", "veg", "single", "weekly", 650),
-    plan("Weekly Non-Veg — One Meal a Day", "non-veg", "single", "weekly", 733),
-    plan("Monthly Veg — One Meal a Day", "veg", "single", "monthly", 1800),
-    plan("Monthly Non-Veg — One Meal a Day", "non-veg", "single", "monthly", 2050),
-    plan("Weekly Veg — Lunch & Dinner", "veg", "twice-daily", "weekly", 1183),
-    plan("Weekly Non-Veg — Lunch & Dinner", "non-veg", "twice-daily", "weekly", 1250),
-    plan("Monthly Veg — Lunch & Dinner", "veg", "twice-daily", "monthly", 3400),
-    plan("Monthly Non-Veg — Lunch & Dinner", "non-veg", "twice-daily", "monthly", 3600),
-    plan("Weekly Veg — All Three Meals", "veg", "thrice-daily", "weekly", 1250),
-    plan("Weekly Non-Veg — All Three Meals", "non-veg", "thrice-daily", "weekly", 1333),
-    plan("Monthly Veg — All Three Meals", "veg", "thrice-daily", "monthly", 3600),
-    plan("Monthly Non-Veg — All Three Meals", "non-veg", "thrice-daily", "monthly", 3850),
+    // --- Regular ---
+    plan("Weekly Veg — One Meal a Day", "veg", "regular", "single", "weekly", 650),
+    plan("Weekly Non-Veg — One Meal a Day", "non-veg", "regular", "single", "weekly", 733),
+    plan("Monthly Veg — One Meal a Day", "veg", "regular", "single", "monthly", 1800),
+    plan("Monthly Non-Veg — One Meal a Day", "non-veg", "regular", "single", "monthly", 2050),
+    plan("Weekly Veg — Lunch & Dinner", "veg", "regular", "twice-daily", "weekly", 1183),
+    plan("Weekly Non-Veg — Lunch & Dinner", "non-veg", "regular", "twice-daily", "weekly", 1250),
+    plan("Monthly Veg — Lunch & Dinner", "veg", "regular", "twice-daily", "monthly", 3400),
+    plan("Monthly Non-Veg — Lunch & Dinner", "non-veg", "regular", "twice-daily", "monthly", 3600),
+    plan("Weekly Veg — All Three Meals", "veg", "regular", "thrice-daily", "weekly", 1250),
+    plan("Weekly Non-Veg — All Three Meals", "non-veg", "regular", "thrice-daily", "weekly", 1333),
+    plan("Monthly Veg — All Three Meals", "veg", "regular", "thrice-daily", "monthly", 3600),
+    plan("Monthly Non-Veg — All Three Meals", "non-veg", "regular", "thrice-daily", "monthly", 3850),
+    plan("Monthly Veg — Lunch Only", "veg", "regular", "lunch-only", "monthly", 2499),
+    plan("Monthly Non-Veg — Lunch Only", "non-veg", "regular", "lunch-only", "monthly", 3499),
+    plan("Monthly Veg — Dinner Only", "veg", "regular", "dinner-only", "monthly", 2599),
+    plan("Monthly Non-Veg — Dinner Only", "non-veg", "regular", "dinner-only", "monthly", 3599),
+    // --- Mini (lunch/dinner only) ---
+    plan("Weekly Mini Veg — One Meal a Day", "veg", "mini", "single", "weekly", 583),
+    plan("Weekly Mini Non-Veg — One Meal a Day", "non-veg", "mini", "single", "weekly", 667),
+    plan("Monthly Mini Veg — One Meal a Day", "veg", "mini", "single", "monthly", 1600),
+    plan("Monthly Mini Non-Veg — One Meal a Day", "non-veg", "mini", "single", "monthly", 1850),
+    plan("Weekly Mini Veg — Lunch & Dinner", "veg", "mini", "twice-daily", "weekly", 1050),
+    plan("Weekly Mini Non-Veg — Lunch & Dinner", "non-veg", "mini", "twice-daily", "weekly", 1117),
+    plan("Monthly Mini Veg — Lunch & Dinner", "veg", "mini", "twice-daily", "monthly", 3000),
+    plan("Monthly Mini Non-Veg — Lunch & Dinner", "non-veg", "mini", "twice-daily", "monthly", 3200),
+    // --- Premium ---
+    plan("Weekly Premium Veg — One Meal a Day", "veg", "premium", "single", "weekly", 750),
+    plan("Weekly Premium Non-Veg — One Meal a Day", "non-veg", "premium", "single", "weekly", 833),
+    plan("Monthly Premium Veg — One Meal a Day", "veg", "premium", "single", "monthly", 2100),
+    plan("Monthly Premium Non-Veg — One Meal a Day", "non-veg", "premium", "single", "monthly", 2350),
+    plan("Weekly Premium Veg — Lunch & Dinner", "veg", "premium", "twice-daily", "weekly", 1317),
+    plan("Weekly Premium Non-Veg — Lunch & Dinner", "non-veg", "premium", "twice-daily", "weekly", 1383),
+    plan("Monthly Premium Veg — Lunch & Dinner", "veg", "premium", "twice-daily", "monthly", 3800),
+    plan("Monthly Premium Non-Veg — Lunch & Dinner", "non-veg", "premium", "twice-daily", "monthly", 4000),
+    plan("Weekly Premium Veg — All Three Meals", "veg", "premium", "thrice-daily", "weekly", 1350),
+    plan("Weekly Premium Non-Veg — All Three Meals", "non-veg", "premium", "thrice-daily", "weekly", 1433),
+    plan("Monthly Premium Veg — All Three Meals", "veg", "premium", "thrice-daily", "monthly", 3900),
+    plan("Monthly Premium Non-Veg — All Three Meals", "non-veg", "premium", "thrice-daily", "monthly", 4150),
   ]);
 
   // --------------------------------------------------------------- blog ----

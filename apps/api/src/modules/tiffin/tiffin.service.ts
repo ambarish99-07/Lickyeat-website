@@ -1,5 +1,14 @@
-import type { CreateTiffinClosureRequest, CreateTiffinSubscriptionRequest } from "@lickyeat/shared-types";
-import { CANCELLATION_FULL_REFUND_WINDOW_DAYS, CANCELLATION_REFUND_PERCENT } from "@lickyeat/shared-types";
+import type {
+  CreateTiffinClosureRequest,
+  CreateTiffinSubscriptionRequest,
+  TiffinTier,
+} from "@lickyeat/shared-types";
+import {
+  CANCELLATION_FULL_REFUND_WINDOW_DAYS,
+  CANCELLATION_REFUND_PERCENT,
+  TIFFIN_TIER_LABELS,
+  isValidTierStyle,
+} from "@lickyeat/shared-types";
 import { TiffinSubscriptionModel } from "../../db/models/TiffinSubscription.model.js";
 import { TiffinSingleMealOrderModel } from "../../db/models/TiffinSingleMealOrder.model.js";
 import { TiffinClosureModel } from "../../db/models/TiffinClosure.model.js";
@@ -17,7 +26,7 @@ export async function getActiveClosures() {
 
 export async function listPlans() {
   const plans = await TiffinPlanModel.find({ active: true })
-    .sort({ duration: 1, diet: 1, price: 1 })
+    .sort({ tier: 1, duration: 1, diet: 1, price: 1 })
     .lean();
   return plans.map((p) => serialize(p));
 }
@@ -33,11 +42,18 @@ export async function createSubscription(userId: string, input: CreateTiffinSubs
   if (plan.style === "single" && !input.mealType) {
     throw badRequest("Pick which meal you want for a single-meal-a-day plan.");
   }
+  const tier = (plan.tier ?? "regular") as TiffinTier;
+  if (!isValidTierStyle(tier, plan.style, input.mealType ?? undefined)) {
+    throw badRequest(
+      `A ${TIFFIN_TIER_LABELS[tier]} plan can't include breakfast — pick a lunch or dinner option.`,
+    );
+  }
 
   const closureRanges = await getActiveClosures();
   const { meals, endDate } = computeMealsForRangeSkippingClosedDates({
     startDate: input.startDate,
     deliveryDays: plan.durationDays,
+    tier,
     diet: plan.diet,
     style: plan.style,
     singleMeal: input.mealType,
@@ -51,6 +67,7 @@ export async function createSubscription(userId: string, input: CreateTiffinSubs
     planId: plan._id,
     planName: plan.name,
     diet: plan.diet,
+    tier,
     style: plan.style,
     mealType: plan.style === "single" ? input.mealType : null,
     duration: plan.duration,
@@ -208,6 +225,7 @@ export async function declareClosure(input: CreateTiffinClosureRequest) {
         deliveryDays: Math.ceil(
           affected / mealsForStyle(sub.style, sub.mealType ?? "lunch").length,
         ),
+        tier: (sub.tier ?? "regular") as TiffinTier,
         diet: sub.diet,
         style: sub.style,
         singleMeal: sub.mealType ?? "lunch",

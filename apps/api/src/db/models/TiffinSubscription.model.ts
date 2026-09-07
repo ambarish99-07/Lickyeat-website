@@ -32,9 +32,10 @@ const subscriptionSchema = new Schema(
     planId: { type: Types.ObjectId, ref: "TiffinPlan", required: true },
     planName: { type: String, default: "" },
     diet: { type: String, enum: ["veg", "non-veg"], required: true },
+    tier: { type: String, enum: ["regular", "mini", "premium"], default: "regular" },
     style: {
       type: String,
-      enum: ["single", "twice-daily", "thrice-daily"],
+      enum: ["single", "twice-daily", "thrice-daily", "lunch-only", "dinner-only"],
       required: true,
     },
     mealType: {
