@@ -32,9 +32,14 @@ changes, port the parts that apply here.
   Full menu / Veg / Non-veg tab strip.
 - **Single-meal ordering cutoffs** realigned to `mealOrderingWindow.ts`
   (`8041be6`): lunch 1pm IST, dinner 9pm IST, breakfast next-day-only.
-- **Tiffin plan prices** realigned to the app's Regular-tier catalog (`8041be6`).
-  The website keeps 12 Regular plans; the app's Mini/Premium *subscription*
-  tiers + lunch-only/dinner-only styles are still backlog (below).
+- **Tiffin plan prices** realigned to the app's catalog (`8041be6`, `03f4087`).
+- **Tiffin dish menu resync + per-dish pricing** (`8788d1d`) — the rotation and
+  every dish's own price now match the app's `TiffinDish` seed; single-meal
+  orders charge the per-dish price. Per-dish FSSAI diet dots on the menu.
+- **Tiered subscription plans** (`03f4087`) — `TiffinPlan.tier` /
+  `TiffinSubscription.tier`, a 36-plan Regular/Mini/Premium catalog,
+  lunch-only/dinner-only styles, Mini-no-breakfast validation, subscription
+  meals resolved against the plan's tier.
 
 ### Catalog audit (2026-09-07)
 TBC + Alchemy Tails menu items and prices are **identical** between the app's
@@ -43,24 +48,6 @@ website-only (the app has no biryani menu items). Only the **tiffin plan
 catalog** diverged.
 
 ## Backlog — reviewed, not yet ported (needs a decision)
-
-### Tiered tiffin subscription plans (`0d728db`, `9461192`) — BIG
-The app made `TiffinPlan` carry a **tier** (Regular/Mini/Premium — same three as
-single-meal) and added **`lunch-only`** / **`dinner-only`** plan styles, plus:
-- Mini has no breakfast dish → `assertValidTierStyle` / `TIER_MEAL_TYPES` reject a
-  tier/style/mealType combo that would need one, at both `createPlan` and
-  `createSubscription`.
-- Subscription meal resolution builds a **per-tier dish lookup**
-  (`buildDishLookupForTier`), snapshotting `tier` onto the subscription.
-- `TiffinDish.price` — a per-dish price override on top of the shared
-  `TiffinMealPrice` slot price.
-- Admin `TiffinPlansPage` / `TiffinMenuPage` reworked around tiers.
-
-The website's tiffin is simpler on purpose (12 fixed plans, `tiffinDishData.ts`
-already keyed by tier×diet×meal×weekday). Porting this is a real rework of the
-seed + `tiffin.service` + subscribe flow + admin. **Do it only if you actually
-want Mini/Premium subscription plans on the web** — the single-meal tiers already
-cover "try before you commit".
 
 ### Cross-brand browse categories (`browseCategory.ts`, `AllCouponsScreen` nav)
 The app added a fixed cross-brand taxonomy (Shakes, Biryani, Chicken, Paneer…)

@@ -18,7 +18,7 @@ A full ordering **web app** for lickyeat.com serving the same brands under one u
 |---|---|---|---|
 | The Blenders Club | `tbc` | catalog | 12 signature thick shakes + 3 cold coffees (Choco Crush, Hazelnut Heaven, Coffee Chill …), ₹179–249 |
 | The Alchemy Tails | `alchemy-tails` | catalog | 15 mocktails (Blue Lagoon, Mango Mojito, Rainbow Fizz …), ₹129–199 |
-| GG Tiffin Service | `gg-tiffin` | tiffin (subscriptions + single-meal, **separate order universe**) | Bihari home food — real weekly rotation (Aloo Matar, Rajma, Dum Aloo, Chicken/Fish/Egg/Mutton Curry …), Regular/Mini/Premium tiers, 12 fixed plans. **Subscriptions are Razorpay-only** (an up-front commitment); a same-day single meal still allows COD. |
+| GG Tiffin Service | `gg-tiffin` | tiffin (subscriptions + single-meal, **separate order universe**) | Bihari home food — real weekly rotation (Aloo Matar, Rajma, Dum Aloo, Chicken/Fish/Egg/Mutton Curry …), Regular/Mini/Premium tiers, 36 plans (single / twice / thrice / lunch-only / dinner-only). **Subscriptions are Razorpay-only** (an up-front commitment); a same-day single meal still allows COD. |
 | The Biryani Lane | `the-biryani-lane` | catalog | 10 dum biryanis (Chicken, Hyderabadi, Kolkata-style, Shahi, Sarson, Pocket, Veg, Paneer, Paneer Tikka …) each in a **500 g / 1 kg** `sizeVariant` — larger box carries double chicken/egg/aloo; no photos yet (typography cards), `hasSugarIceCustomization: false`, ₹139–459 |
 
 **The catalog matches the real Lickyeat app** — item names, prices, combos, coupons
