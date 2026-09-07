@@ -10,6 +10,7 @@ const brandSchema = new Schema(
     status: { type: String, enum: ["live", "coming-soon"], default: "live" },
     logoUrl: { type: String, default: null },
     heroImageUrl: { type: String, default: null },
+    heroImageUrlDark: { type: String, default: null },
     primaryColor: { type: String, default: "#e8552d" },
     accentColor: { type: String, default: "#f4a259" },
     sortOrder: { type: Number, default: 0 },

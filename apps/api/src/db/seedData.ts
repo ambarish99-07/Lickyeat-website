@@ -143,6 +143,8 @@ type Item = {
   hasSugarIceCustomization?: boolean;
   /** set false when there's no photo yet (card falls back to typography). */
   hasImage?: boolean;
+  /** "veg" (default) or "non-veg". */
+  dietType?: "veg" | "non-veg";
 };
 
 const TBC_ITEMS: Item[] = [
@@ -329,6 +331,7 @@ const BIRYANI_ITEMS: Item[] = BIRYANI_ROWS.map((r) => ({
   description: r.description,
   price: r.half.price,
   category: r.category,
+  dietType: r.category === "chicken-biryani" ? "non-veg" : "veg",
   portionSize: r.half.label,
   sizeVariants: [{ label: r.full.label, price: r.full.price }],
   hasSugarIceCustomization: false,
@@ -348,6 +351,7 @@ function buildItems(items: Item[], brandId: string) {
     description: i.description,
     price: i.price,
     category: i.category,
+    dietType: i.dietType ?? "veg",
     portionSize: i.portionSize ?? "",
     imageUrl: (i.hasImage ?? true) ? menuImageUrl(i.id) : null,
     flavorBadges: i.flavorBadges,

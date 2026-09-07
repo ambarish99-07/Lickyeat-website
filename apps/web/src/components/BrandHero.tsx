@@ -13,20 +13,28 @@ import { assetUrl } from "@/lib/format";
 export function BrandHero({ brand }: { brand: Brand }) {
   const logo = assetUrl(brand.logoUrl);
   const hero = assetUrl(brand.heroImageUrl);
+  const heroDark = assetUrl(brand.heroImageUrlDark);
+  const imgClass = "block w-full object-cover object-center";
+  const imgStyle = { aspectRatio: "8 / 3" } as const;
 
   return (
     <section className="border-b border-line">
       {hero && (
         <div className="mx-auto max-w-[1600px]">
           {/* object-cover at 8:3 keeps the band identical even if a future
-              upload isn't exactly 1600×600. */}
+              upload isn't exactly 1600×600. When a dark-mode variant is set,
+              both are rendered and CSS swaps them (respects the theme toggle). */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={hero}
             alt=""
-            className="block w-full object-cover object-center"
-            style={{ aspectRatio: "8 / 3" }}
+            className={heroDark ? `${imgClass} hero-img-light` : imgClass}
+            style={imgStyle}
           />
+          {heroDark && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={heroDark} alt="" className={`${imgClass} hero-img-dark`} style={imgStyle} />
+          )}
         </div>
       )}
 

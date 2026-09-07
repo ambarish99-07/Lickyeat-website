@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import useSWR from "swr";
@@ -59,7 +60,6 @@ function SubscribeForm() {
     pincode: "",
     withinDeliveryRadius: false,
   });
-  const [method, setMethod] = useState<"cod" | "razorpay">("cod");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -79,7 +79,7 @@ function SubscribeForm() {
         mealType: selected.style === "single" ? mealType : undefined,
         startDate,
         address,
-        paymentMethod: method,
+        paymentMethod: "razorpay",
       });
 
       if (res.razorpayOrder) {
@@ -186,16 +186,14 @@ function SubscribeForm() {
         </div>
       </div>
 
-      <Field label="Payment">
-        <SegmentedControl
-          value={method}
-          onChange={setMethod}
-          options={[
-            { value: "cod", label: "Cash on delivery" },
-            { value: "razorpay", label: "Pay online" },
-          ]}
-        />
-      </Field>
+      <p className="rounded-xl border border-line bg-sand/40 px-3.5 py-2.5 text-sm text-charcoal">
+        Subscriptions are paid online (Razorpay) — a plan is an up-front commitment. A one-off
+        <Link href="/tiffin/single-meal" className="link">
+          {" "}
+          single meal{" "}
+        </Link>
+        still takes cash on delivery.
+      </p>
 
       <p className="text-xs text-muted">
         Weekly plans run their course. Monthly plans: 50% refund if cancelled within the first 15

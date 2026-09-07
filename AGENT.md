@@ -18,7 +18,7 @@ A full ordering **web app** for lickyeat.com serving the same brands under one u
 |---|---|---|---|
 | The Blenders Club | `tbc` | catalog | 12 signature thick shakes + 3 cold coffees (Choco Crush, Hazelnut Heaven, Coffee Chill …), ₹179–249 |
 | The Alchemy Tails | `alchemy-tails` | catalog | 15 mocktails (Blue Lagoon, Mango Mojito, Rainbow Fizz …), ₹129–199 |
-| GG Tiffin Service | `gg-tiffin` | tiffin (subscriptions + single-meal, **separate order universe**) | Bihari home food — real weekly rotation (Aloo Matar, Rajma, Dum Aloo, Chicken/Fish/Egg/Mutton Curry …), Regular/Mini/Premium tiers, 12 fixed plans |
+| GG Tiffin Service | `gg-tiffin` | tiffin (subscriptions + single-meal, **separate order universe**) | Bihari home food — real weekly rotation (Aloo Matar, Rajma, Dum Aloo, Chicken/Fish/Egg/Mutton Curry …), Regular/Mini/Premium tiers, 12 fixed plans. **Subscriptions are Razorpay-only** (an up-front commitment); a same-day single meal still allows COD. |
 | The Biryani Lane | `the-biryani-lane` | catalog | 10 dum biryanis (Chicken, Hyderabadi, Kolkata-style, Shahi, Sarson, Pocket, Veg, Paneer, Paneer Tikka …) each in a **500 g / 1 kg** `sizeVariant` — larger box carries double chicken/egg/aloo; no photos yet (typography cards), `hasSugarIceCustomization: false`, ₹139–459 |
 
 **The catalog matches the real Lickyeat app** — item names, prices, combos, coupons
@@ -170,7 +170,9 @@ maths is in `resolveCouponDiscount` (shared-types) — callers pass `pricingLine
 |---|---|---|
 | Home — brand showcase (SSR) | `app/page.tsx`, `components/BrandShowcaseCard` | `GET /brands` |
 | Coming-soon teaser (SSR) | `app/coming-soon/[brandId]/` | `GET /brands/:brandId` |
-| Brand menu, combos, customize (SSR shell + client menu) | `app/b/[brandId]/`, `components/BrandHero`, `components/menu/{BrandMenu,MenuItemCard,CustomizeSheet,ComboCard}` | `GET /menu/:brandId/{items,combos,categories}`, `/menu/addons` — **all return out-of-stock rows too** |
+| Brand menu, combos, customize (SSR shell + client menu) | `app/b/[brandId]/`, `components/BrandHero`, `components/menu/{BrandMenu,MenuItemCard,CustomizeSheet,ComboCard,DietDot}` | `GET /menu/:brandId/{items,combos,categories}`, `/menu/addons` — **all return out-of-stock rows too** |
+| Veg / non-veg | `MenuItem.dietType` (`"veg"` default), `DietDot` FSSAI mark per item + a "Veg only" toggle on `BrandMenu` (shown only when the brand has a non-veg item) | field flows through `serialize` |
+| Offers & coupons page | `app/offers/`, `components/CopyCode` (footer + `/account` link) | `GET /coupons/available` (brand-agnostic, already returns all active) |
 | Cart + estimate/preview + coupon | `app/cart/`, `state/cartStore`, `lib/clientPricing` | `POST /pricing/preview` |
 | Checkout (COD + simulated Razorpay) | `app/checkout/` | `POST /orders`, `/orders/verify-payment` |
 | Order tracking (timeline, partner, map, price, cancel) | `app/order/[token]/`, `components/OrderTracker`, `lib/mapEmbed` | `GET /orders/track/:token`, `POST .../cancel` |

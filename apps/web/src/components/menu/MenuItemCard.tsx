@@ -7,6 +7,7 @@ import { assetUrl } from "@/lib/format";
 import { useCart } from "@/state/cartStore";
 import { toast } from "@/state/toastStore";
 import { CustomizeSheet } from "./CustomizeSheet";
+import { DietDot } from "./DietDot";
 
 export function MenuItemCard({ item }: { item: MenuItem }) {
   const add = useCart((s) => s.add);
@@ -77,7 +78,8 @@ export function MenuItemCard({ item }: { item: MenuItem }) {
         </div>
 
         <div className="flex min-w-0 flex-1 flex-col p-4">
-          <h3 className={cn("font-display font-bold leading-tight", sold && "text-muted line-through")}>
+          <h3 className={cn("flex items-center gap-1.5 font-display font-bold leading-tight", sold && "text-muted line-through")}>
+            <DietDot nonVeg={item.dietType === "non-veg"} className="shrink-0" />
             {item.signatureName}
           </h3>
           <p className="text-xs text-muted">{item.commonName}</p>

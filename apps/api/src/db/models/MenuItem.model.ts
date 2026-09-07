@@ -22,6 +22,7 @@ const menuItemSchema = new Schema(
     price: { type: Number, required: true, min: 0 },
     portionSize: { type: String, default: "" },
     imageUrl: { type: String, default: null },
+    dietType: { type: String, enum: ["veg", "non-veg"], default: "veg" },
     flavorBadges: { type: [String], default: [] },
     isPopular: { type: Boolean },
     isNew: { type: Boolean },

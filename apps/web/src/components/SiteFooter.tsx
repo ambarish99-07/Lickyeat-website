@@ -36,6 +36,7 @@ export function SiteFooter() {
         <nav className="text-sm">
           <p className="eyebrow mb-3">Lickyeat</p>
           <ul className="space-y-2 text-charcoal">
+            <li><Link href="/offers" className="hover:text-brand">Offers &amp; coupons</Link></li>
             <li><Link href="/app" className="hover:text-brand">Get the app</Link></li>
             <li><Link href="/blog" className="hover:text-brand">Blog</Link></li>
             <li><Link href="/#brands" className="hover:text-brand">All kitchens</Link></li>

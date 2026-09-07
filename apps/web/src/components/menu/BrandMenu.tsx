@@ -7,6 +7,7 @@ import { categoryLabel } from "@lickyeat/shared-types";
 import type { ComboWithLive } from "@/lib/apiTypes";
 import { MenuItemCard } from "./MenuItemCard";
 import { ComboCard } from "./ComboCard";
+import { DietDot } from "./DietDot";
 import { StoreClosedBanner } from "@/components/StoreClosedBanner";
 import { useCart } from "@/state/cartStore";
 import { rupees } from "@/lib/format";
@@ -33,7 +34,13 @@ export function BrandMenu({
     }, 0),
   );
 
-  const sections = categories.filter((c) => items.some((i) => i.category === c));
+  // "Veg only" — offered only when this brand's menu actually has a non-veg item
+  // (a pure shakes/mocktails brand has nothing to filter).
+  const hasNonVeg = items.some((i) => i.dietType === "non-veg");
+  const [vegOnly, setVegOnly] = useState(false);
+  const shownItems = vegOnly ? items.filter((i) => i.dietType !== "non-veg") : items;
+
+  const sections = categories.filter((c) => shownItems.some((i) => i.category === c));
   const [activeSlug, setActiveSlug] = useState(sections[0] ? slug(sections[0]) : "");
   const refs = useRef<Record<string, HTMLElement | null>>({});
 
@@ -56,6 +63,29 @@ export function BrandMenu({
       {(!status.open || status.upcomingClosure) && (
         <div className="mb-6">
           <StoreClosedBanner brandId={brand.brandId} status={status} />
+        </div>
+      )}
+
+      {hasNonVeg && (
+        <div className="mb-5 flex items-center justify-between gap-3">
+          <span className="flex items-center gap-2 text-sm text-muted">
+            <DietDot nonVeg title="This menu has non-vegetarian items" />
+            Contains non-veg
+          </span>
+          <button
+            type="button"
+            onClick={() => setVegOnly((v) => !v)}
+            aria-pressed={vegOnly}
+            className={cn(
+              "inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm font-semibold transition",
+              vegOnly
+                ? "border-[#2E7D32] bg-[#2E7D32]/10 text-[#2E7D32]"
+                : "border-line text-charcoal hover:border-ink/30",
+            )}
+          >
+            <DietDot nonVeg={false} />
+            Veg only
+          </button>
         </div>
       )}
 
@@ -102,7 +132,7 @@ export function BrandMenu({
         >
           <h2 className="mb-4 font-display text-xl font-extrabold">{categoryLabel(cat)}</h2>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {items
+            {shownItems
               .filter((i) => i.category === cat)
               .map((item) => (
                 <MenuItemCard key={item.id} item={item} />

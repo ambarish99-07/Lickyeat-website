@@ -17,6 +17,15 @@ export const IceLevelSchema = z.enum(["less", "regular", "extra"]);
 export type IceLevel = z.infer<typeof IceLevelSchema>;
 
 /**
+ * Veg / non-veg. Defaults "veg" so every item created before this field existed
+ * (all genuinely vegetarian TBC / Alchemy Tails drinks) keeps working unchanged —
+ * a brand with a real mixed menu (The Biryani Lane's chicken & egg biryanis) sets
+ * it explicitly per item. Powers the menu's "Veg only" filter + the FSSAI diet mark.
+ */
+export const MenuDietTypeSchema = z.enum(["veg", "non-veg"]);
+export type MenuDietType = z.infer<typeof MenuDietTypeSchema>;
+
+/**
  * An extra size beyond the item's default (its own `price`). Priced directly by
  * the admin, never a multiplier. `isAvailable` is a per-size out-of-stock toggle.
  */
@@ -61,6 +70,8 @@ export const MenuItemSchema = z.object({
   price: RupeesSchema,
   portionSize: z.string().max(40).default(""),
   imageUrl: z.string().nullable().default(null),
+  /** Veg / non-veg — defaults "veg". See MenuDietTypeSchema. */
+  dietType: MenuDietTypeSchema.default("veg"),
   /** Loose descriptors — "Chocolate Lover", "Fruity", "Minty". Display chips. */
   flavorBadges: z.array(z.string()).default([]),
   isPopular: z.boolean().optional(),
@@ -99,6 +110,7 @@ export const CreateMenuItemRequestSchema = MenuItemSchema.omit({
   hasSugarIceCustomization: true,
   addOnNames: true,
   isAvailable: true,
+  dietType: true,
 });
 export type CreateMenuItemRequest = z.infer<typeof CreateMenuItemRequestSchema>;
 

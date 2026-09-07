@@ -22,6 +22,9 @@ export const BrandSchema = z.object({
   status: BrandStatusSchema.default("live"),
   logoUrl: z.string().url().or(z.string().startsWith("/")).nullable().default(null),
   heroImageUrl: z.string().url().or(z.string().startsWith("/")).nullable().default(null),
+  /** Optional dark-mode variant of the hero banner (a moodier / night-lit shot).
+   * Falls back to `heroImageUrl` when unset — setting it is never required. */
+  heroImageUrlDark: z.string().url().or(z.string().startsWith("/")).nullable().default(null),
   primaryColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).default("#e8552d"),
   accentColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).default("#f4a259"),
   sortOrder: z.number().int().default(0),

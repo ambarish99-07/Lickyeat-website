@@ -206,7 +206,9 @@ export const CreateTiffinSubscriptionRequestSchema = z.object({
   mealType: TiffinMealTypeSchema.optional(),
   startDate: z.string(),
   address: AddressSchema,
-  paymentMethod: PaymentMethodSchema,
+  /** Subscriptions are Razorpay-only — an up-front commitment, unlike a same-day
+   * single meal which still allows COD. */
+  paymentMethod: z.literal("razorpay").default("razorpay"),
 });
 export type CreateTiffinSubscriptionRequest = z.infer<
   typeof CreateTiffinSubscriptionRequestSchema

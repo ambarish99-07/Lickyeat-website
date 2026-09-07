@@ -82,9 +82,14 @@ function AccountInner() {
             <>Just {toPremiumTier} more to reach the Premium tier (a permanent 25% off).</>
           )}
         </p>
-        <Link href="/premium" className="link mt-2 inline-block text-sm">
-          Lickyeat Premium Membership →
-        </Link>
+        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+          <Link href="/premium" className="link">
+            Lickyeat Premium Membership →
+          </Link>
+          <Link href="/offers" className="link">
+            Offers &amp; coupons →
+          </Link>
+        </div>
       </section>
 
       <section className="card p-5">
