@@ -28,6 +28,19 @@ changes, port the parts that apply here.
 - **`Brand.heroImageUrlDark`** field + CSS theme-swap in `BrandHero` — `ff5e0fe`.
 - Light/dark mode + glossy sky palette — done earlier (`451c044`), matching the
   app's dark-mode work (`762e7e5` etc.).
+- **Veg / Non-veg menu tabs** (`8041be6`) — the app's per-brand veg switch, as a
+  Full menu / Veg / Non-veg tab strip.
+- **Single-meal ordering cutoffs** realigned to `mealOrderingWindow.ts`
+  (`8041be6`): lunch 1pm IST, dinner 9pm IST, breakfast next-day-only.
+- **Tiffin plan prices** realigned to the app's Regular-tier catalog (`8041be6`).
+  The website keeps 12 Regular plans; the app's Mini/Premium *subscription*
+  tiers + lunch-only/dinner-only styles are still backlog (below).
+
+### Catalog audit (2026-09-07)
+TBC + Alchemy Tails menu items and prices are **identical** between the app's
+`seed.ts` and the website's `seedData.ts` — nothing to port. Biryani Lane is
+website-only (the app has no biryani menu items). Only the **tiffin plan
+catalog** diverged.
 
 ## Backlog — reviewed, not yet ported (needs a decision)
 
