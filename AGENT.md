@@ -226,17 +226,29 @@ If dev shows `SegmentViewNode` / `__webpack_modules__ is not a function` errors,
 
 ## 7. Deferred / not done
 
-- No real geocoding, no real rider dispatch (fixed demo partner pool), WhatsApp fail-silent with
-  placeholder messages.
+- **Geocoding is real**: order addresses are geocoded on creation (OpenStreetMap Nominatim) and
+  routed shop→door (OSRM) for a real distance + ETA; the delivery-zone check is a real
+  `DELIVERY_MAX_KM` radius from `SHOP_LAT/LNG`. Both are keyless public services — on failure the
+  API falls back to the old city/pincode check (no distance/ETA). No rider *dispatch* system
+  (partner is still a fixed demo pool), but rider *location* is real (below). WhatsApp is
+  fail-silent with placeholder messages.
+- **Live rider tracking**: advancing an order to out-for-delivery mints a `riderToken`; the rider
+  opens `/rider/<token>` on their phone → `navigator.geolocation.watchPosition` posts to
+  `POST /orders/rider/:token/ping` every ~10s → the customer's tracking page shows the rider
+  moving on a Leaflet/OSM map (`components/LiveMap`) toward the geocoded drop. The token is
+  admin-only (stripped from customer responses); pings stop being accepted once delivered. With
+  no live location yet, the time-based `DeliveryProgress` strip shows instead.
 - **Payments**: the full Razorpay flow is built end to end — server creates real orders +
   HMAC-verifies signatures (`modules/payments/razorpay.ts`), client opens Razorpay Checkout
   (`apps/web/src/lib/razorpay.ts`) across `/checkout`, `/premium`, `/tiffin/single-meal`,
   `/tiffin/subscribe`, each with a `…/verify-payment` endpoint. With no `RAZORPAY_KEY_ID/_SECRET`
   the server returns a stub `order_local_*` and the client auto-completes it (`"dev-ok"`), so the
   demo works; **add the two keys and the real widget goes live with no code change**
-  (`GET /payments/config` tells the UI which mode it's in). **Still to wire:** a Razorpay webhook
-  for reconciliation, and the refunds API — cancellations record `refundAmount` but don't push it
-  to Razorpay.
+  (`GET /payments/config` tells the UI which mode it's in). Cancelling a paid order / subscription /
+  single-meal calls Razorpay's **refund API** (`createRazorpayRefund`), stores the `refundId`, and
+  sets `cancellation.refundStatus` (`processing` / `recorded` / `failed`); a `pay_sim_*` payment or
+  keyless run stays `recorded` (manual settlement). **Still to wire:** a Razorpay webhook for
+  reconciliation.
 - Franchise/catering leads: automated **outbound** WhatsApp (the enquirer's brief) needs Meta
   WhatsApp Business API creds + an approved template — the adapter (`modules/leads/notify.ts`) is
   written but dormant. Until then the web shows the brief on-screen + a `wa.me` deep link

@@ -33,6 +33,49 @@ export async function createRazorpayOrder(
   return { id: data.id, amount: data.amount, currency: data.currency, keyId: env.razorpay.keyId! };
 }
 
+export interface RefundResult {
+  status: "processing" | "recorded" | "failed";
+  refundId: string | null;
+}
+
+/**
+ * Push a refund to Razorpay's refund API. Only fires for a real, verified
+ * payment on a keyed account — a simulated `pay_sim_*` payment or a keyless
+ * dev run is "recorded" only (the business settles it manually), same as before.
+ */
+export async function createRazorpayRefund(
+  paymentId: string | null | undefined,
+  amountRupees: number,
+): Promise<RefundResult> {
+  if (
+    !env.razorpay.configured ||
+    !paymentId ||
+    paymentId.startsWith("pay_sim_") ||
+    amountRupees <= 0
+  ) {
+    return { status: "recorded", refundId: null };
+  }
+  const auth = Buffer.from(`${env.razorpay.keyId}:${env.razorpay.keySecret}`).toString("base64");
+  try {
+    const resp = await fetch(`https://api.razorpay.com/v1/payments/${paymentId}/refunds`, {
+      method: "POST",
+      headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ amount: Math.round(amountRupees * 100), speed: "normal" }),
+    });
+    if (!resp.ok) {
+      // eslint-disable-next-line no-console
+      console.error(`[razorpay] refund failed (${resp.status}): ${(await resp.text()).slice(0, 300)}`);
+      return { status: "failed", refundId: null };
+    }
+    const data = (await resp.json()) as { id: string };
+    return { status: "processing", refundId: data.id };
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error("[razorpay] refund request threw", err);
+    return { status: "failed", refundId: null };
+  }
+}
+
 /** HMAC-SHA256 signature verification (server-side, always). */
 export function verifyRazorpaySignature(params: {
   razorpayOrderId: string;

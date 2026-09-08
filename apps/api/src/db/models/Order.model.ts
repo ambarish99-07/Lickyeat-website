@@ -73,8 +73,21 @@ const orderSchema = new Schema(
         reason: { type: String, default: "" },
         refundPercent: Number,
         refundAmount: Number,
+        refundStatus: { type: String, default: "not-applicable" },
         _id: false,
       },
+      default: null,
+    },
+    /** shop→door distance/ETA from geocoding. */
+    geo: {
+      type: { distanceMeters: Number, durationSeconds: Number, routed: Boolean, _id: false },
+      default: null,
+    },
+    etaMinutes: { type: Number, default: null },
+    /** capability token the rider opens to share their live location. */
+    riderToken: { type: String, default: null, index: true },
+    riderLocation: {
+      type: { lat: Number, lng: Number, at: Date, _id: false },
       default: null,
     },
     notes: { type: String, default: "" },

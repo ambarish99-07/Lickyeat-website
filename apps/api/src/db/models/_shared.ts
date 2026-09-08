@@ -8,6 +8,8 @@ export const addressSubSchema = new Schema(
     city: { type: String, required: true },
     pincode: { type: String, required: true },
     withinDeliveryRadius: { type: Boolean, default: false },
+    lat: { type: Number, default: null },
+    lng: { type: Number, default: null },
   },
   { _id: false },
 );
@@ -17,6 +19,7 @@ export const razorpayRefsSubSchema = new Schema(
     orderId: { type: String, default: null },
     paymentId: { type: String, default: null },
     signature: { type: String, default: null },
+    refundId: { type: String, default: null },
   },
   { _id: false },
 );

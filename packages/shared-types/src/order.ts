@@ -102,6 +102,8 @@ export const RazorpayRefsSchema = z.object({
   orderId: z.string().nullable(),
   paymentId: z.string().nullable(),
   signature: z.string().nullable(),
+  /** Razorpay refund id once a paid order is cancelled and the refund is pushed. */
+  refundId: z.string().nullable().default(null),
 });
 
 export const OrderCancellationSchema = z.object({
@@ -110,7 +112,36 @@ export const OrderCancellationSchema = z.object({
   reason: z.string().default(""),
   refundPercent: z.number(),
   refundAmount: RupeesSchema,
+  /** "recorded" = amount logged, business settles manually (no keys / simulated
+   * payment). "processing" = pushed to Razorpay's refund API. "not-applicable"
+   * = nothing was collected. */
+  refundStatus: z.enum(["not-applicable", "recorded", "processing", "failed"]).default("not-applicable"),
 });
+
+/** Live delivery geometry, filled from geocoding + routing on order creation. */
+export const OrderGeoSchema = z.object({
+  /** shop → address, metres (road distance if OSRM available, else straight-line). */
+  distanceMeters: z.number(),
+  /** estimated drive time, seconds. */
+  durationSeconds: z.number(),
+  /** true when a real router (OSRM) produced this, false for the haversine fallback. */
+  routed: z.boolean(),
+});
+export type OrderGeo = z.infer<typeof OrderGeoSchema>;
+
+/** The rider's last reported position while out for delivery. */
+export const RiderLocationSchema = z.object({
+  lat: z.number(),
+  lng: z.number(),
+  at: z.string(),
+});
+export type RiderLocation = z.infer<typeof RiderLocationSchema>;
+
+export const RiderPingRequestSchema = z.object({
+  lat: z.number().min(-90).max(90),
+  lng: z.number().min(-180).max(180),
+});
+export type RiderPingRequest = z.infer<typeof RiderPingRequestSchema>;
 
 export const OrderSchema = z.object({
   id: ObjectIdSchema,
@@ -141,6 +172,15 @@ export const OrderSchema = z.object({
   }),
   deliveryPartner: DeliveryPartnerSchema.nullable(),
   cancellation: OrderCancellationSchema.nullable(),
+  /** shop→door distance/ETA from geocoding; null when geocoding didn't run. */
+  geo: OrderGeoSchema.nullable().default(null),
+  /** total door-to-door minutes once out for delivery (prep + drive). */
+  etaMinutes: z.number().nullable().default(null),
+  /** rider's live position while out for delivery; null until the rider shares it. */
+  riderLocation: RiderLocationSchema.nullable().default(null),
+  /** capability token for the rider's location-share page — present in admin
+   * responses only (stripped from customer-facing ones). */
+  riderToken: z.string().nullable().optional(),
   notes: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),

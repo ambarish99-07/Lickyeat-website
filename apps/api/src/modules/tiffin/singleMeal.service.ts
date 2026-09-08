@@ -6,7 +6,7 @@ import { badRequest, notFound } from "../../lib/errors.js";
 import { accessToken, orderCode } from "../../lib/ids.js";
 import { serialize } from "../../lib/serialize.js";
 import { sendWhatsAppOrderUpdate } from "../../integrations/whatsapp.js";
-import { createRazorpayOrder, verifyRazorpaySignature } from "../payments/razorpay.js";
+import { createRazorpayOrder, createRazorpayRefund, verifyRazorpaySignature } from "../payments/razorpay.js";
 import { isWithinDeliveryZone } from "../orders/deliveryZone.js";
 import { pickDeliveryPartner } from "../orders/deliveryPartner.js";
 import { getActiveClosures } from "./tiffin.service.js";
@@ -156,8 +156,15 @@ export async function cancelSingleMeal(token: string) {
 
   order.status = "cancelled";
   order.statusHistory.push({ status: "cancelled", at: new Date() });
-  order.cancellation = { cancelledAt: new Date(), refundPercent, refundAmount };
-  if (refundAmount > 0) payment.status = "refunded";
+
+  let refundStatus: "not-applicable" | "recorded" | "processing" | "failed" = "not-applicable";
+  if (refundAmount > 0) {
+    const refund = await createRazorpayRefund(payment.razorpay?.paymentId, refundAmount);
+    refundStatus = refund.status;
+    if (refund.refundId) payment.razorpay!.refundId = refund.refundId;
+    payment.status = "refunded";
+  }
+  order.cancellation = { cancelledAt: new Date(), refundPercent, refundAmount, refundStatus };
   await order.save();
   return serialize(order.toObject());
 }

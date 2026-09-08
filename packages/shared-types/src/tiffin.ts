@@ -272,6 +272,9 @@ export const TiffinSubscriptionSchema = z.object({
       cancelledAt: z.string(),
       refundPercent: z.number(),
       refundAmount: RupeesSchema,
+      refundStatus: z
+        .enum(["not-applicable", "recorded", "processing", "failed"])
+        .default("not-applicable"),
     })
     .nullable(),
   createdAt: z.string(),
@@ -337,7 +340,14 @@ export const TiffinSingleMealOrderSchema = z.object({
     razorpay: RazorpayRefsSchema,
   }),
   cancellation: z
-    .object({ cancelledAt: z.string(), refundPercent: z.number(), refundAmount: RupeesSchema })
+    .object({
+      cancelledAt: z.string(),
+      refundPercent: z.number(),
+      refundAmount: RupeesSchema,
+      refundStatus: z
+        .enum(["not-applicable", "recorded", "processing", "failed"])
+        .default("not-applicable"),
+    })
     .nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),

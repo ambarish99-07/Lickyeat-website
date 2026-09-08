@@ -4,6 +4,7 @@ import {
   CancelOrderRequestSchema,
   CreateOrderRequestSchema,
   OrderStatusSchema,
+  RiderPingRequestSchema,
   VerifyPaymentRequestSchema,
 } from "@lickyeat/shared-types";
 import { asyncHandler, parse, param } from "../../lib/http.js";
@@ -66,6 +67,22 @@ ordersRouter.post(
   asyncHandler(async (req, res) => {
     const body = parse(CancelOrderRequestSchema, req.body);
     res.json({ order: await service.cancelOrder(param(req, "token"), body) });
+  }),
+);
+
+// ---- rider live location (rider link token IS the auth) ----
+ordersRouter.get(
+  "/rider/:token",
+  asyncHandler(async (req, res) => {
+    res.json(await service.getRiderView(param(req, "token")));
+  }),
+);
+
+ordersRouter.post(
+  "/rider/:token/ping",
+  asyncHandler(async (req, res) => {
+    const body = parse(RiderPingRequestSchema, req.body);
+    res.json(await service.recordRiderPing(param(req, "token"), body.lat, body.lng));
   }),
 );
 

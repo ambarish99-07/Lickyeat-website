@@ -11,3 +11,4 @@ export * from "./storeSettings.js";
 export * from "./blog.js";
 export * from "./lead.js";
 export * from "./payment.js";
+export * from "./geo.js";

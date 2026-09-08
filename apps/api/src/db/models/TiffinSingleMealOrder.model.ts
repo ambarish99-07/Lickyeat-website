@@ -52,6 +52,7 @@ const singleMealSchema = new Schema(
         orderId: { type: String, default: null },
         paymentId: { type: String, default: null },
         signature: { type: String, default: null },
+        refundId: { type: String, default: null },
       },
     },
     cancellation: {
@@ -59,6 +60,7 @@ const singleMealSchema = new Schema(
         cancelledAt: Date,
         refundPercent: Number,
         refundAmount: Number,
+        refundStatus: { type: String, default: "not-applicable" },
         _id: false,
       },
       default: null,

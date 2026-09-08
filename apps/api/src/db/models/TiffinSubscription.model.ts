@@ -67,6 +67,7 @@ const subscriptionSchema = new Schema(
         orderId: { type: String, default: null },
         paymentId: { type: String, default: null },
         signature: { type: String, default: null },
+        refundId: { type: String, default: null },
       },
     },
     cancellation: {
@@ -74,6 +75,7 @@ const subscriptionSchema = new Schema(
         cancelledAt: Date,
         refundPercent: Number,
         refundAmount: Number,
+        refundStatus: { type: String, default: "not-applicable" },
         _id: false,
       },
       default: null,

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import useSWR from "swr";
 import type { Order, OrderStatus } from "@lickyeat/shared-types";
 import { api } from "@/lib/api";
@@ -59,6 +60,14 @@ export default function AdminOrders() {
               {o.deliveryPartner && (
                 <span className="text-xs text-muted">🛵 {o.deliveryPartner.name}</span>
               )}
+              {o.status === "out-for-delivery" && o.riderToken && (
+                <RiderLinkButton token={o.riderToken} />
+              )}
+              {o.cancellation?.refundAmount ? (
+                <span className="text-xs text-muted">
+                  refund {rupees(o.cancellation.refundAmount)} · {o.cancellation.refundStatus}
+                </span>
+              ) : null}
               {next && (
                 <button
                   className={cn("btn-primary btn-sm ml-auto")}
@@ -72,5 +81,27 @@ export default function AdminOrders() {
         })}
       </div>
     </div>
+  );
+}
+
+function RiderLinkButton({ token }: { token: string }) {
+  const [copied, setCopied] = useState(false);
+  const url =
+    typeof window !== "undefined" ? `${window.location.origin}/rider/${token}` : `/rider/${token}`;
+  return (
+    <button
+      className="btn-ghost btn-sm"
+      onClick={async () => {
+        try {
+          await navigator.clipboard.writeText(url);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 1500);
+        } catch {
+          window.prompt("Rider link", url);
+        }
+      }}
+    >
+      {copied ? "link copied" : "copy rider link"}
+    </button>
   );
 }

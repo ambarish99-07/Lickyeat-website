@@ -36,6 +36,8 @@ function AccountInner() {
     city: "Patna",
     pincode: "",
     withinDeliveryRadius: false,
+    lat: null,
+    lng: null,
   });
 
   async function saveName() {

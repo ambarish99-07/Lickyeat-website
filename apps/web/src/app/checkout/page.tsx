@@ -30,6 +30,8 @@ const emptyAddress: Address = {
   city: "Patna",
   pincode: "",
   withinDeliveryRadius: false,
+    lat: null,
+    lng: null,
 };
 
 export default function CheckoutPage() {

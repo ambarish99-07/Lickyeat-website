@@ -19,8 +19,10 @@ import { resolveCart, price } from "../pricing/priceResolver.js";
 import { buildLoyaltyState } from "../pricing/loyalty.js";
 import { resolveCouponForCart } from "../coupons/coupons.service.js";
 import { getBrandStoreStatus } from "../storeSettings/storeSettings.service.js";
-import { isWithinDeliveryZone } from "./deliveryZone.js";
+import { resolveDelivery } from "./deliveryZone.js";
 import { pickDeliveryPartner } from "./deliveryPartner.js";
+import { createRazorpayRefund } from "../payments/razorpay.js";
+import { accessToken as makeToken } from "../../lib/ids.js";
 
 const STATUS_FLOW: OrderStatus[] = [
   "received",
@@ -30,9 +32,17 @@ const STATUS_FLOW: OrderStatus[] = [
 ];
 
 export async function createOrder(input: CreateOrderRequest, user: AuthedUser | undefined) {
-  if (!isWithinDeliveryZone(input.address)) {
-    throw badRequest("Sorry, we don't deliver to that address yet (Patna only for now).");
+  const delivery = await resolveDelivery(input.address);
+  if (!delivery.serviceable) {
+    throw badRequest(
+      `Sorry, that address is outside our delivery area (within ${8} km of the Patna kitchen).`,
+    );
   }
+  const address = {
+    ...input.address,
+    lat: delivery.point?.lat ?? input.address.lat ?? null,
+    lng: delivery.point?.lng ?? input.address.lng ?? null,
+  };
 
   const cart = await resolveCart(input.lines);
 
@@ -83,7 +93,9 @@ export async function createOrder(input: CreateOrderRequest, user: AuthedUser | 
     accessToken: accessToken(),
     contactName,
     contactPhone,
-    address: input.address,
+    address,
+    geo: delivery.geo,
+    etaMinutes: delivery.etaMinutes,
     lines: cart.snapshots,
     pricing,
     couponCode: coupon.code,
@@ -158,15 +170,54 @@ export async function verifyPayment(params: {
   return serialize(order.toObject());
 }
 
+/** The rider link token is admin-only — never hand it to whoever holds the
+ *  customer's tracking token. */
+function stripRiderToken<T extends { riderToken?: unknown }>(o: T): Omit<T, "riderToken"> {
+  const { riderToken: _omit, ...rest } = o;
+  void _omit;
+  return rest;
+}
+
 export async function getOrderByAccessToken(token: string) {
   const order = await OrderModel.findOne({ accessToken: token }).lean();
   if (!order) throw notFound("Order not found");
-  return serialize(order);
+  return stripRiderToken(serialize<Record<string, unknown>>(order));
+}
+
+/* ------------------------------------------------------------ rider tracking */
+
+/** What the rider's own page needs to bootstrap (no PII beyond first name). */
+export async function getRiderView(riderToken: string) {
+  const order = await OrderModel.findOne({ riderToken }).lean();
+  if (!order) throw notFound("Link not found");
+  const active = order.status === "out-for-delivery";
+  return {
+    orderCode: order.code,
+    active,
+    customerName: (order.contactName || "the customer").split(" ")[0],
+    dropAddress: `${order.address.line1}, ${order.address.city} ${order.address.pincode}`,
+    drop:
+      order.address.lat != null && order.address.lng != null
+        ? { lat: order.address.lat, lng: order.address.lng }
+        : null,
+  };
+}
+
+/** Rider posts their position; ignored once the order is no longer out for delivery. */
+export async function recordRiderPing(riderToken: string, lat: number, lng: number) {
+  const order = await OrderModel.findOne({ riderToken });
+  if (!order) throw notFound("Link not found");
+  if (order.status !== "out-for-delivery") {
+    return { accepted: false as const };
+  }
+  order.riderLocation = { lat, lng, at: new Date() };
+  await order.save();
+  return { accepted: true as const };
 }
 
 export async function listMyOrders(userId: string) {
   const orders = await OrderModel.find({ userId }).sort({ createdAt: -1 }).lean();
-  return orders.map((o) => serialize(o));
+  return orders.map((o) => stripRiderToken(serialize<Record<string, unknown>>(o)));
 }
 
 /**
@@ -327,21 +378,36 @@ export async function cancelOrder(token: string, body: CancelOrderRequest) {
 
   order.status = "cancelled";
   order.statusHistory.push({ status: "cancelled", at: new Date() });
+
+  let refundStatus: "not-applicable" | "recorded" | "processing" | "failed" = "not-applicable";
+  if (refundAmount > 0) {
+    const refund = await createRazorpayRefund(order.payment.razorpay?.paymentId, refundAmount);
+    refundStatus = refund.status;
+    if (refund.refundId) order.payment.razorpay.refundId = refund.refundId;
+    order.payment.status = "refunded";
+  }
+
   order.cancellation = {
     cancelledAt: new Date(),
     cancelledFromStatus: fromStatus,
     reason: body.reason ?? "",
     refundPercent,
     refundAmount,
+    refundStatus,
   };
-  if (refundAmount > 0) order.payment.status = "refunded";
   await order.save();
 
+  const refundLine =
+    refundStatus === "processing"
+      ? ` ₹${refundAmount} refund initiated via Razorpay.`
+      : refundStatus === "recorded"
+        ? ` ₹${refundAmount} refund recorded — settled manually.`
+        : refundStatus === "failed"
+          ? ` Refund of ₹${refundAmount} couldn't be started automatically — the team will process it.`
+          : "";
   void sendWhatsAppOrderUpdate(
     order.contactPhone,
-    refundAmount > 0
-      ? `Lickyeat: order ${order.code} cancelled. ₹${refundAmount} will be refunded (settled manually).`
-      : `Lickyeat: order ${order.code} cancelled.`,
+    `Lickyeat: order ${order.code} cancelled.${refundLine}`,
   );
 
   return serialize(order.toObject());
@@ -364,8 +430,12 @@ export async function advanceOrderStatus(orderId: string, next: OrderStatus) {
   order.status = next;
   order.statusHistory.push({ status: next, at: new Date() });
 
-  if (next === "out-for-delivery" && !order.deliveryPartner) {
-    order.deliveryPartner = pickDeliveryPartner(String(order._id), "regular");
+  if (next === "out-for-delivery") {
+    if (!order.deliveryPartner) {
+      order.deliveryPartner = pickDeliveryPartner(String(order._id), "regular");
+    }
+    // Capability token the rider opens on their phone to share live location.
+    if (!order.riderToken) order.riderToken = makeToken();
   }
   await order.save();
 

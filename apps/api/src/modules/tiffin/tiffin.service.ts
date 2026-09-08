@@ -15,7 +15,7 @@ import { TiffinClosureModel } from "../../db/models/TiffinClosure.model.js";
 import { TiffinPlanModel } from "../../db/models/TiffinPlan.model.js";
 import { badRequest, forbidden, notFound } from "../../lib/errors.js";
 import { serialize } from "../../lib/serialize.js";
-import { createRazorpayOrder, verifyRazorpaySignature } from "../payments/razorpay.js";
+import { createRazorpayOrder, createRazorpayRefund, verifyRazorpaySignature } from "../payments/razorpay.js";
 import { computeMealsForRangeSkippingClosedDates, mealsForStyle } from "./tiffinSchedule.js";
 
 export async function getActiveClosures() {
@@ -184,8 +184,14 @@ export async function cancelSubscription(userId: string, id: string) {
   const refundAmount = Math.round((paid * refundPercent) / 100);
 
   sub.status = "cancelled";
-  sub.cancellation = { cancelledAt: new Date(), refundPercent, refundAmount };
-  if (refundAmount > 0) subPayment.status = "refunded";
+  let refundStatus: "not-applicable" | "recorded" | "processing" | "failed" = "not-applicable";
+  if (refundAmount > 0) {
+    const refund = await createRazorpayRefund(subPayment.razorpay?.paymentId, refundAmount);
+    refundStatus = refund.status;
+    if (refund.refundId) subPayment.razorpay!.refundId = refund.refundId;
+    subPayment.status = "refunded";
+  }
+  sub.cancellation = { cancelledAt: new Date(), refundPercent, refundAmount, refundStatus };
   for (const m of sub.meals) if (m.status === "scheduled") m.status = "skipped";
   await sub.save();
   return serialize(sub.toObject());
@@ -256,8 +262,14 @@ export async function declareClosure(input: CreateTiffinClosureRequest) {
     const paid = oPayment.status === "paid" ? oPayment.amount ?? 0 : 0;
     o.status = "cancelled";
     o.statusHistory.push({ status: "cancelled", at: new Date() });
-    o.cancellation = { cancelledAt: new Date(), refundPercent: 100, refundAmount: paid };
-    if (paid > 0) oPayment.status = "refunded";
+    let refundStatus: "not-applicable" | "recorded" | "processing" | "failed" = "not-applicable";
+    if (paid > 0) {
+      const refund = await createRazorpayRefund(oPayment.razorpay?.paymentId, paid);
+      refundStatus = refund.status;
+      if (refund.refundId) oPayment.razorpay!.refundId = refund.refundId;
+      oPayment.status = "refunded";
+    }
+    o.cancellation = { cancelledAt: new Date(), refundPercent: 100, refundAmount: paid, refundStatus };
     await o.save();
   }
 

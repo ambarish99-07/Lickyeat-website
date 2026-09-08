@@ -17,10 +17,18 @@ export const AddressSchema = z.object({
   line2: z.string().max(200).default(""),
   city: z.string().min(2).max(80),
   pincode: z.string().regex(/^\d{6}$/),
-  /** Self-reported "within delivery radius" placeholder — no geocoding (§5). */
+  /** Customer hint; the real check is the geocoded distance (see `lat`/`lng`). */
   withinDeliveryRadius: z.boolean().default(false),
+  /** Filled server-side by geocoding the address on order creation. Null when
+   * geocoding failed or hasn't run — callers fall back to the city/pincode check. */
+  lat: z.number().nullable().default(null),
+  lng: z.number().nullable().default(null),
 });
 export type Address = z.infer<typeof AddressSchema>;
+
+/** A point on the map. */
+export const GeoPointSchema = z.object({ lat: z.number(), lng: z.number() });
+export type GeoPoint = z.infer<typeof GeoPointSchema>;
 
 export const UserSchema = z.object({
   id: ObjectIdSchema,

@@ -62,6 +62,8 @@ function SubscribeForm() {
     city: "Patna",
     pincode: "",
     withinDeliveryRadius: false,
+    lat: null,
+    lng: null,
   });
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);

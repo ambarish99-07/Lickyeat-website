@@ -47,6 +47,8 @@ function SingleMealForm() {
     city: "Patna",
     pincode: "",
     withinDeliveryRadius: false,
+    lat: null,
+    lng: null,
   });
   const [guestName, setGuestName] = useState("");
   const [guestPhone, setGuestPhone] = useState("");

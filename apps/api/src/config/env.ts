@@ -31,6 +31,12 @@ export const env = {
       return Boolean(this.token && this.phoneId);
     },
   },
+  /** Kitchen location + prep time — powers geocoded delivery distance / ETA. */
+  shop: {
+    lat: process.env.SHOP_LAT ? Number(process.env.SHOP_LAT) : null,
+    lng: process.env.SHOP_LNG ? Number(process.env.SHOP_LNG) : null,
+    prepMinutes: Number(process.env.PREP_MINUTES) || 15,
+  },
   /** Public-facing Lickyeat WhatsApp number for wa.me deep links + the ops fallback alert. */
   contact: {
     /** digits only, country code included, e.g. 919000000000 */

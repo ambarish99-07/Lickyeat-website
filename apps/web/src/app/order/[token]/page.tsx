@@ -22,7 +22,8 @@ function policyText(order: Order): string {
 export default function OrderTrackPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = use(params);
   const { data, mutate, isLoading } = useSWR<{ order: Order }>(`/orders/track/${token}`, {
-    refreshInterval: 15000,
+    // poll fast while a rider could be moving, slower otherwise
+    refreshInterval: (d) => (d?.order.status === "out-for-delivery" ? 8000 : 20000),
   });
 
   if (isLoading) return <p className="container-page py-16 text-center text-muted">Loading order…</p>;
@@ -43,6 +44,7 @@ export default function OrderTrackPage({ params }: { params: Promise<{ token: st
           refundPercent: o.cancellation.refundPercent,
           refundAmount: o.cancellation.refundAmount,
           reason: o.cancellation.reason,
+          refundStatus: o.cancellation.refundStatus,
         }
       : null,
     cancelPolicy: policyText(o),
@@ -54,7 +56,8 @@ export default function OrderTrackPage({ params }: { params: Promise<{ token: st
     })),
     pricing: o.pricing,
     createdAt: o.createdAt,
-    etaMinutes: 35, // typical Patna door-to-door once out for delivery
+    etaMinutes: o.etaMinutes ?? 35,
+    riderLocation: o.riderLocation ?? null,
   };
 
   return (

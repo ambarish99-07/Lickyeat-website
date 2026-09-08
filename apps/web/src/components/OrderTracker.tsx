@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge, cn } from "@/components/ui/misc";
 import { PriceBreakdown } from "@/components/PriceBreakdown";
 import { DeliveryProgress } from "@/components/DeliveryProgress";
+import { LiveMap } from "@/components/LiveMap";
 
 const STEPS = ["received", "preparing", "out-for-delivery", "delivered"] as const;
 const STEP_LABEL: Record<string, string> = {
@@ -29,13 +30,20 @@ export interface TrackableOrder {
   total: number;
   deliveryPartner: DeliveryPartner | null;
   statusHistory: Array<{ status: string; at: string }>;
-  cancellation: { refundPercent: number; refundAmount: number; reason?: string } | null;
+  cancellation: {
+    refundPercent: number;
+    refundAmount: number;
+    reason?: string;
+    refundStatus?: string;
+  } | null;
   cancelPolicy: string;
   items: Array<{ name: string; sub?: string; quantity: number; lineSubtotal: number }>;
   pricing?: PricingResult | null;
   createdAt: string;
   /** ~door-to-door minutes for the moving-rider strip. Omit for tiffin (no ASAP ETA). */
   etaMinutes?: number;
+  /** rider's live position while out for delivery (from the rider's shared link). */
+  riderLocation?: { lat: number; lng: number; at: string } | null;
 }
 
 export function OrderTracker({
@@ -90,7 +98,11 @@ export function OrderTracker({
             {order.cancellation && order.cancellation.refundAmount > 0 ? (
               <p className="mt-1 text-sm text-charcoal">
                 Refund of {rupees(order.cancellation.refundAmount)} ({order.cancellation.refundPercent}%)
-                will be settled manually.
+                {order.cancellation.refundStatus === "processing"
+                  ? " — initiated via Razorpay, back in your account in 5–7 working days."
+                  : order.cancellation.refundStatus === "failed"
+                    ? " — being processed by our team."
+                    : " — will be settled to you."}
               </p>
             ) : (
               <p className="mt-1 text-sm text-muted">
@@ -126,7 +138,7 @@ export function OrderTracker({
           </div>
         )}
 
-        {order.status === "out-for-delivery" && !cancelled && (
+        {order.status === "out-for-delivery" && !cancelled && !order.riderLocation && (
           <DeliveryProgress
             outForDeliveryAt={
               order.statusHistory.find((h) => h.status === "out-for-delivery")?.at ?? null
@@ -134,6 +146,39 @@ export function OrderTracker({
             etaMinutes={order.etaMinutes}
             partnerName={order.deliveryPartner?.name}
           />
+        )}
+
+        {order.status === "out-for-delivery" && !cancelled && order.riderLocation && (
+          <div className="card overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-2.5">
+              <p className="text-sm font-semibold">
+                {order.deliveryPartner?.name
+                  ? `${order.deliveryPartner.name} is on the way 🛵`
+                  : "Your rider is on the way 🛵"}
+              </p>
+              <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                </span>
+                Live
+              </span>
+            </div>
+            <LiveMap
+              rider={order.riderLocation}
+              drop={
+                order.address.lat != null && order.address.lng != null
+                  ? { lat: order.address.lat, lng: order.address.lng }
+                  : null
+              }
+              className="h-64 w-full"
+            />
+            <p className="px-4 py-2 text-xs text-muted">
+              Live position shared by your rider · updated{" "}
+              {Math.max(0, Math.round((Date.now() - new Date(order.riderLocation.at).getTime()) / 1000))}s
+              ago
+            </p>
+          </div>
         )}
 
         {order.deliveryPartner && !cancelled && (
@@ -154,7 +199,7 @@ export function OrderTracker({
           </div>
         )}
 
-        <div className="card overflow-hidden">
+        <div className="card overflow-hidden" hidden={Boolean(order.riderLocation) && !cancelled}>
           <iframe
             title="Delivery location"
             className="h-64 w-full border-0"
@@ -163,7 +208,7 @@ export function OrderTracker({
             )}
           />
           <p className="px-4 py-2.5 text-xs text-muted">
-            Showing the delivery address — not a live rider position.
+            The delivery address. A live rider position shows here once your rider starts the trip.
           </p>
         </div>
 

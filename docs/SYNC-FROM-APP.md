@@ -43,7 +43,22 @@ changes, port the parts that apply here.
 - **Cross-brand browse** (`8fef14e`) — `GET /menu/browse[/:id]` + `/browse` grid +
   `/browse/[id]` items-by-kitchen. "Pure Veg" / "Non-veg" match by `dietType`.
 - **Moving-rider delivery strip** (`8fef14e`) — `components/DeliveryProgress` in
-  `OrderTracker` while out-for-delivery (time estimate, not GPS).
+  `OrderTracker` while out-for-delivery (time estimate, no location).
+
+## Beyond the app — gaps the mobile app openly defers, now closed on the web
+
+- **Live rider GPS tracking** — the rider opens `/rider/<token>`,
+  `navigator.geolocation.watchPosition` posts every ~10s, the customer sees the
+  rider move on an OSM/Leaflet map. The app has "a static WebView map showing
+  the delivery address … no real GPS feed to plot one from."
+- **Real Razorpay refunds** — cancellations call Razorpay's refund API and store
+  the `refundId`. The app "records, never actually pushes through Razorpay's
+  refund API — Phase-1, business settles manually."
+- **Real geocoding + routing** — Nominatim geocode + OSRM route on order
+  creation → real shop→door distance, ETA, and a radius delivery-zone check. The
+  app has "no real geocoding — a hardcoded single-city check."
+  (All three degrade to the app's simpler behaviour when the third-party
+  services or Razorpay keys are unavailable.)
 
 ### Catalog audit (2026-09-07)
 TBC + Alchemy Tails menu items and prices are **identical** between the app's
